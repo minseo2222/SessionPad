@@ -33,6 +33,7 @@ public partial class MainWindow : Window
     private IntPtr _windowHandle;
     private bool _hotkeyRegistered;
     private bool _exitRequested;
+    private bool _userHiddenToTray;
 
     public MainWindow()
     {
@@ -72,6 +73,7 @@ public partial class MainWindow : Window
         if (!_exitRequested)
         {
             e.Cancel = true;
+            _userHiddenToTray = true;
             HideSafely();
             return;
         }
@@ -102,6 +104,7 @@ public partial class MainWindow : Window
 
     public void ShowAndActivateFromExternalRequest()
     {
+        _userHiddenToTray = false;
         ShowAndRestoreSafely();
         ActivateSafely();
     }
@@ -252,6 +255,7 @@ public partial class MainWindow : Window
 
     private void OnHotkeyPressed()
     {
+        _userHiddenToTray = false;
         DetectedWindowInfo detectedWindow;
 
         try
@@ -434,7 +438,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!IsVisible)
+        if (!IsVisible && !_userHiddenToTray)
         {
             ShowAndRestoreSafely();
         }
