@@ -43,6 +43,40 @@
                             BorderThickness="1"
                             CornerRadius="4">
                         <StackPanel>
+                            <TextBlock Text="Current Session"
+                                       FontWeight="SemiBold"
+                                       Foreground="#111827" />
+                            <TextBlock Margin="0,6,0,0"
+                                       Foreground="#334155"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding CurrentSessionDisplayName, Mode=OneWay, TargetNullValue=(none), FallbackValue=Name: (none), StringFormat={}Name: {0}}" />
+                            <TextBlock Foreground="#334155"
+                                       Text="{Binding CurrentSessionKind, Mode=OneWay, TargetNullValue=(none), FallbackValue=Type: (none), StringFormat={}Type: {0}}" />
+                            <TextBlock Foreground="#334155"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding CurrentSessionId, Mode=OneWay, TargetNullValue=(none), FallbackValue=Session ID: (none), StringFormat={}Session ID: {0}}" />
+                            <TextBlock Foreground="#334155"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding CurrentNormalizedWindowTitle, Mode=OneWay, TargetNullValue=(none), FallbackValue=Normalized title: (none), StringFormat={}Normalized title: {0}}" />
+                            <TextBlock Foreground="#334155"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding CurrentSessionMatchKey, Mode=OneWay, TargetNullValue=(none), FallbackValue=Match key: (none), StringFormat={}Match key: {0}}" />
+                            <TextBlock Foreground="#334155"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding CurrentSessionNoteFile, Mode=OneWay, TargetNullValue=(none), FallbackValue=Note file: (none), StringFormat={}Note file: {0}}" />
+                            <TextBlock Foreground="#B45309"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding CurrentSessionStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Session status: Ready, StringFormat={}Session status: {0}}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="10"
+                            Margin="0,0,0,8"
+                            Background="White"
+                            BorderBrush="#E2E8F0"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <StackPanel>
                             <!-- DetectedWindowInfo is read-only debug state. Use TextBlock or Mode=OneWay bindings only. -->
                             <TextBlock Text="Detected Window"
                                        FontWeight="SemiBold"

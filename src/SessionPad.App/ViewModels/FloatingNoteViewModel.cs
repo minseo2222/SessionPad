@@ -13,11 +13,19 @@ namespace SessionPad.App.ViewModels;
 public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 {
     private readonly NoteStorageService _storageService;
+    private SessionSummary? _currentSession;
     private DateTimeOffset _createdAt = DateTimeOffset.UtcNow;
     private NotePanelState _panelState = NotePanelState.CompactNote;
     private DetectedWindowInfo? _lastDetectedWindow;
     private bool _isAttachedToWindow;
     private bool _isHiddenBecauseTargetMinimized;
+    private string _currentSessionId = "default";
+    private string _currentSessionDisplayName = "Default local note";
+    private string _currentSessionKind = "Default";
+    private string _currentSessionStatus = "Default local note";
+    private string? _currentSessionNoteFile = "notes/default.json";
+    private string? _currentNormalizedWindowTitle;
+    private string? _currentSessionMatchKey = "default";
     private string _attachmentStatus = "Not attached";
     private string? _attachmentSide;
     private string? _attachmentError;
@@ -49,7 +57,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         DeleteNoteCommand = new RelayCommand(DeleteNote);
 
         TodoItems.CollectionChanged += OnTodoItemsChanged;
-        LoadNote();
+        LoadDefaultNote();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -104,6 +112,48 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public bool IsCompactNote => PanelState == NotePanelState.CompactNote;
 
     public int OpenTodoCount => TodoItems.Count(item => !item.IsDone);
+
+    public string CurrentSessionId
+    {
+        get => _currentSessionId;
+        private set => SetField(ref _currentSessionId, value);
+    }
+
+    public string CurrentSessionDisplayName
+    {
+        get => _currentSessionDisplayName;
+        private set => SetField(ref _currentSessionDisplayName, value);
+    }
+
+    public string CurrentSessionKind
+    {
+        get => _currentSessionKind;
+        private set => SetField(ref _currentSessionKind, value);
+    }
+
+    public string CurrentSessionStatus
+    {
+        get => _currentSessionStatus;
+        private set => SetField(ref _currentSessionStatus, value);
+    }
+
+    public string? CurrentSessionNoteFile
+    {
+        get => _currentSessionNoteFile;
+        private set => SetField(ref _currentSessionNoteFile, value);
+    }
+
+    public string? CurrentNormalizedWindowTitle
+    {
+        get => _currentNormalizedWindowTitle;
+        private set => SetField(ref _currentNormalizedWindowTitle, value);
+    }
+
+    public string? CurrentSessionMatchKey
+    {
+        get => _currentSessionMatchKey;
+        private set => SetField(ref _currentSessionMatchKey, value);
+    }
 
     public DetectedWindowInfo? LastDetectedWindow
     {
@@ -186,8 +236,45 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         LastFollowUpdateText = result.FollowUpdateText;
     }
 
-    private void LoadNote()
+    public void LoadWindowSession(SessionSummary session, string matchKey)
     {
+        if (session.SessionId == CurrentSessionId)
+        {
+            ApplyWindowSessionContext(session, matchKey, "Window session already loaded");
+            return;
+        }
+
+        SaveNote();
+
+        _currentSession = session;
+        ApplyWindowSessionContext(session, matchKey, "Window session loaded");
+        ClearNewItemInputs();
+
+        var savedNote = _storageService.LoadSessionNote(session);
+        if (savedNote is null)
+        {
+            _createdAt = DateTimeOffset.UtcNow;
+            PanelState = NotePanelState.CompactNote;
+            ReplaceItems(CreateEmptyNote(session.SessionId));
+            SaveNote();
+            return;
+        }
+
+        _createdAt = savedNote.CreatedAt == default ? DateTimeOffset.UtcNow : savedNote.CreatedAt;
+        PanelState = savedNote.PanelState;
+        ReplaceItems(savedNote);
+    }
+
+    public void SetSessionStatus(string status)
+    {
+        CurrentSessionStatus = status;
+    }
+
+    private void LoadDefaultNote()
+    {
+        _currentSession = null;
+        ApplyDefaultSessionContext("Default local note");
+
         var savedNote = _storageService.LoadDefaultNote();
         if (savedNote is null)
         {
@@ -333,11 +420,19 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     {
         try
         {
-            _storageService.SaveDefaultNote(CreateSnapshot());
+            var snapshot = CreateSnapshot();
+            if (_currentSession is null)
+            {
+                _storageService.SaveDefaultNote(snapshot);
+                return;
+            }
+
+            _storageService.SaveSessionNote(_currentSession, snapshot);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            Debug.WriteLine($"SessionPad could not save the default note: {ex.Message}");
+            Debug.WriteLine($"SessionPad could not save the current note: {ex.Message}");
+            CurrentSessionStatus = $"Save failed: {ex.Message}";
         }
     }
 
@@ -346,7 +441,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         return new SessionNote
         {
             SchemaVersion = 1,
-            SessionId = "default",
+            SessionId = CurrentSessionId,
             PanelState = PanelState,
             CreatedAt = _createdAt,
             UpdatedAt = DateTimeOffset.UtcNow,
@@ -387,6 +482,52 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
                     .ToList()
             }
         };
+    }
+
+    private static SessionNote CreateEmptyNote(string sessionId)
+    {
+        var now = DateTimeOffset.UtcNow;
+        return new SessionNote
+        {
+            SchemaVersion = 1,
+            SessionId = sessionId,
+            PanelState = NotePanelState.CompactNote,
+            CreatedAt = now,
+            UpdatedAt = now,
+            Sections = new NoteSections()
+        };
+    }
+
+    private void ApplyDefaultSessionContext(string status)
+    {
+        CurrentSessionId = "default";
+        CurrentSessionDisplayName = "Default local note";
+        CurrentSessionKind = "Default";
+        CurrentSessionStatus = status;
+        CurrentSessionNoteFile = "notes/default.json";
+        CurrentNormalizedWindowTitle = null;
+        CurrentSessionMatchKey = "default";
+    }
+
+    private void ApplyWindowSessionContext(SessionSummary session, string matchKey, string status)
+    {
+        CurrentSessionId = session.SessionId;
+        CurrentSessionDisplayName = string.IsNullOrWhiteSpace(session.DisplayName)
+            ? "Window session"
+            : session.DisplayName;
+        CurrentSessionKind = "Window Session";
+        CurrentSessionStatus = status;
+        CurrentSessionNoteFile = session.NoteFile;
+        CurrentNormalizedWindowTitle = session.Identity.NormalizedWindowTitle;
+        CurrentSessionMatchKey = matchKey;
+    }
+
+    private void ClearNewItemInputs()
+    {
+        NewPinnedText = string.Empty;
+        NewTodoText = string.Empty;
+        NewCommandText = string.Empty;
+        NewNoteText = string.Empty;
     }
 
     private void OnTodoItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)

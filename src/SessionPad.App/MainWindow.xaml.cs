@@ -16,7 +16,9 @@ public partial class MainWindow : Window
     private readonly HotkeyService _hotkeyService = new();
     private readonly WindowDetectionService _windowDetectionService = new();
     private readonly WindowAttachmentService _windowAttachmentService = new();
-    private readonly FloatingNoteViewModel _viewModel = new();
+    private readonly NoteStorageService _noteStorageService;
+    private readonly SessionMatcher _sessionMatcher;
+    private readonly FloatingNoteViewModel _viewModel;
     private readonly DispatcherTimer _attachmentTimer = new();
     private HwndSource? _source;
     private IntPtr _windowHandle;
@@ -24,6 +26,10 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        _noteStorageService = new NoteStorageService();
+        _sessionMatcher = new SessionMatcher(_noteStorageService);
+        _viewModel = new FloatingNoteViewModel(_noteStorageService);
+
         InitializeComponent();
         DataContext = _viewModel;
 
@@ -102,6 +108,15 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (CanUseWindowSession(detectedWindow))
+        {
+            LoadWindowSessionSafely(detectedWindow);
+        }
+        else
+        {
+            _viewModel.SetSessionStatus("No valid external session target detected.");
+        }
+
         ShowAndRestoreSafely();
         var attachmentResult = _windowAttachmentService.TryAttachToWindow(_windowHandle, detectedWindow);
         _viewModel.SetAttachmentResult(attachmentResult);
@@ -111,6 +126,31 @@ public partial class MainWindow : Window
         {
             ActivateSafely();
         }
+    }
+
+    private void LoadWindowSessionSafely(DetectedWindowInfo detectedWindow)
+    {
+        try
+        {
+            var session = _sessionMatcher.FindOrCreateSession(detectedWindow);
+            var matchKey = _sessionMatcher.CreateMatchKey(session.Identity);
+            _viewModel.LoadWindowSession(session, matchKey);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"SessionPad could not match or load the window session: {ex}");
+            _viewModel.SetSessionStatus($"Session matching failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static bool CanUseWindowSession(DetectedWindowInfo detectedWindow)
+    {
+        return detectedWindow.Hwnd != IntPtr.Zero
+            && !detectedWindow.IsCurrentProcessWindow
+            && detectedWindow.IsVisible
+            && !detectedWindow.IsMinimized
+            && detectedWindow.Width > 0
+            && detectedWindow.Height > 0;
     }
 
     private void OnAttachmentTimerTick(object? sender, EventArgs e)
