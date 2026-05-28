@@ -92,6 +92,16 @@ public partial class MainWindow : Window
             _viewModel.SetLastDetectedWindow(detectedWindow);
         }
 
+        if (detectedWindow.IsCurrentProcessWindow)
+        {
+            var selfAttachmentResult = _windowAttachmentService.IgnoreSessionPadWindow();
+            _viewModel.SetAttachmentResult(selfAttachmentResult);
+            UpdateAttachmentTimer(selfAttachmentResult);
+            ShowAndRestoreSafely();
+            ActivateSafely();
+            return;
+        }
+
         ShowAndRestoreSafely();
         var attachmentResult = _windowAttachmentService.TryAttachToWindow(_windowHandle, detectedWindow);
         _viewModel.SetAttachmentResult(attachmentResult);

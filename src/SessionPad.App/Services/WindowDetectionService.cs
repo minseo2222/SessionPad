@@ -19,17 +19,22 @@ public sealed class WindowDetectionService
             }
 
             var processId = GetProcessId(hwnd, out var processError);
+            var processName = GetProcessName(processId, out var processNameError);
             var bounds = GetBounds(hwnd, out var boundsError);
             var isMinimized = IsMinimized(hwnd, out var minimizedError);
             var isVisible = IsVisible(hwnd, out var visibleError);
-            var error = JoinErrors(processError, boundsError, minimizedError, visibleError);
+            var title = GetWindowTitle(hwnd, out var titleError);
+            var windowClass = GetWindowClass(hwnd, out var classError);
+            var isSessionPadWindow = hwnd == sessionPadHwnd
+                || processId == Environment.ProcessId
+                || string.Equals(processName, "SessionPad.App", StringComparison.OrdinalIgnoreCase);
 
             return new DetectedWindowInfo
             {
                 Hwnd = hwnd,
                 HwndHex = FormatHwnd(hwnd),
-                ProcessName = GetProcessName(processId, out var processNameError),
-                Title = GetWindowTitle(hwnd, out var titleError),
+                ProcessName = processName,
+                Title = title,
                 ProcessId = processId,
                 Left = bounds.Left,
                 Top = bounds.Top,
@@ -37,9 +42,9 @@ public sealed class WindowDetectionService
                 Bottom = bounds.Bottom,
                 IsMinimized = isMinimized,
                 IsVisible = isVisible,
-                IsSessionPadWindow = hwnd == sessionPadHwnd,
-                WindowClass = GetWindowClass(hwnd, out var classError),
-                Error = JoinErrors(error, processNameError, titleError, classError)
+                IsSessionPadWindow = isSessionPadWindow,
+                WindowClass = windowClass,
+                Error = JoinErrors(processError, processNameError, boundsError, minimizedError, visibleError, titleError, classError)
             };
         }
         catch (Exception ex)

@@ -66,6 +66,19 @@ public sealed record WindowAttachmentResult
         };
     }
 
+    public static WindowAttachmentResult IgnoredSessionPadWindow(bool keepTrackingExistingTarget, string? side)
+    {
+        return new WindowAttachmentResult
+        {
+            IsAttached = keepTrackingExistingTarget,
+            ShouldContinueTracking = keepTrackingExistingTarget,
+            Status = "Ignored SessionPad window",
+            Side = keepTrackingExistingTarget ? side : null,
+            Error = "Self window was detected; attach skipped",
+            FollowUpdateText = "Self window was detected; attach skipped"
+        };
+    }
+
     public static WindowAttachmentResult NotAttached(string reason)
     {
         return new WindowAttachmentResult

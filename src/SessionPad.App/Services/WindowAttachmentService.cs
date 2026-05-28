@@ -23,6 +23,11 @@ public sealed class WindowAttachmentService
     {
         try
         {
+            if (IsSessionPadTarget(sessionPadHwnd, target))
+            {
+                return IgnoreSessionPadWindow();
+            }
+
             var validationError = ValidateTarget(sessionPadHwnd, target);
             if (validationError is not null)
             {
@@ -64,6 +69,11 @@ public sealed class WindowAttachmentService
         }
     }
 
+    public WindowAttachmentResult IgnoreSessionPadWindow()
+    {
+        return WindowAttachmentResult.IgnoredSessionPadWindow(HasAttachedTarget, HasAttachedTarget ? _attachSide : null);
+    }
+
     public WindowAttachmentResult UpdateAttachedWindowPosition(IntPtr sessionPadHwnd)
     {
         try
@@ -81,6 +91,11 @@ public sealed class WindowAttachmentService
             if (_attachedTargetHwnd == sessionPadHwnd)
             {
                 return Detach("No external target detected.");
+            }
+
+            if (IsCurrentProcessWindow(_attachedTargetHwnd))
+            {
+                return Detach("Attached target is a SessionPad-owned window.");
             }
 
             if (!User32.IsWindow(_attachedTargetHwnd))
@@ -169,9 +184,9 @@ public sealed class WindowAttachmentService
             return "No external target detected.";
         }
 
-        if (target.IsSessionPadWindow || target.Hwnd == sessionPadHwnd)
+        if (IsSessionPadTarget(sessionPadHwnd, target))
         {
-            return "No external target detected.";
+            return "Ignored SessionPad window.";
         }
 
         if (!User32.IsWindow(target.Hwnd))
@@ -195,6 +210,31 @@ public sealed class WindowAttachmentService
         }
 
         return null;
+    }
+
+    private static bool IsSessionPadTarget(IntPtr sessionPadHwnd, DetectedWindowInfo target)
+    {
+        return target.Hwnd != IntPtr.Zero
+            && (target.Hwnd == sessionPadHwnd || target.IsCurrentProcessWindow || IsCurrentProcessWindow(target.Hwnd));
+    }
+
+    private static bool IsCurrentProcessWindow(IntPtr hwnd)
+    {
+        if (hwnd == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        try
+        {
+            User32.GetWindowThreadProcessId(hwnd, out var processId);
+            return processId != 0 && processId == (uint)Environment.ProcessId;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or OverflowException)
+        {
+            Debug.WriteLine($"SessionPad could not verify target process id: {ex.Message}");
+            return false;
+        }
     }
 
     private static bool TryReadSessionSize(

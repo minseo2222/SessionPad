@@ -30,6 +30,11 @@ public sealed record DetectedWindowInfo
 
     public bool IsSessionPadWindow { get; init; }
 
+    public bool IsCurrentProcessWindow =>
+        IsSessionPadWindow
+        || ProcessId == Environment.ProcessId
+        || string.Equals(ProcessName, "SessionPad.App", StringComparison.OrdinalIgnoreCase);
+
     public string? WindowClass { get; init; }
 
     public string? Error { get; init; }
