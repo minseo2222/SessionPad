@@ -35,6 +35,58 @@ public sealed class SessionMatcher
         var now = DateTimeOffset.UtcNow;
         var matchKey = CreateMatchKey(identity);
 
+        var pinnedSessionIndex = -1;
+        var pinnedSessionLastSeenAt = DateTimeOffset.MinValue;
+        for (var i = 0; i < index.Sessions.Count; i++)
+        {
+            var session = index.Sessions[i];
+            if (!session.IsPinned || session.Identity is null)
+            {
+                continue;
+            }
+
+            if (!string.Equals(
+                NormalizeProcessName(session.Identity.ProcessName),
+                identity.ProcessName,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (pinnedSessionIndex < 0 || session.LastSeenAt > pinnedSessionLastSeenAt)
+            {
+                pinnedSessionIndex = i;
+                pinnedSessionLastSeenAt = session.LastSeenAt;
+            }
+        }
+
+        if (pinnedSessionIndex >= 0)
+        {
+            var session = index.Sessions[pinnedSessionIndex];
+            var existingSessionId = string.IsNullOrWhiteSpace(session.SessionId)
+                ? Guid.NewGuid().ToString("N")
+                : session.SessionId;
+            var updatedSession = session with
+            {
+                SessionId = existingSessionId,
+                DisplayName = session.IsUserNamed ? session.DisplayName : CreateDisplayName(identity),
+                IsUserNamed = session.IsUserNamed,
+                IsPinned = true,
+                Identity = identity,
+                NoteFile = string.IsNullOrWhiteSpace(session.NoteFile)
+                    ? $"notes/{existingSessionId}.json"
+                    : session.NoteFile,
+                LastSeenAt = now,
+                RecentNormalizedTitles = UpdateRecentNormalizedTitles(
+                    session.RecentNormalizedTitles,
+                    identity.NormalizedWindowTitle)
+            };
+
+            index.Sessions[pinnedSessionIndex] = updatedSession;
+            _storageService.SaveSessionIndex(index);
+            return updatedSession;
+        }
+
         for (var i = 0; i < index.Sessions.Count; i++)
         {
             var session = index.Sessions[i];

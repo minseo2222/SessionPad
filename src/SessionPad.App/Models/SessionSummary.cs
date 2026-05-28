@@ -8,6 +8,8 @@ public sealed record SessionSummary
 
     public bool IsUserNamed { get; init; }
 
+    public bool IsPinned { get; init; }
+
     public WindowIdentity Identity { get; init; } = new();
 
     public string NoteFile { get; init; } = string.Empty;
