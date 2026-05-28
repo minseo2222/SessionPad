@@ -8,6 +8,26 @@ namespace SessionPad.App.Services;
 
 public sealed class WindowDetectionService
 {
+    private static readonly HashSet<string> RejectedDragAttachClasses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Progman",
+        "WorkerW",
+        "Shell_TrayWnd",
+        "Shell_SecondaryTrayWnd",
+        "Button",
+        "NotifyIconOverflowWindow",
+        "DV2ControlHost",
+        "SysShadow",
+        "tooltips_class32",
+        "#32768"
+    };
+
+    private static readonly HashSet<string> AllowedExplorerWindowClasses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "CabinetWClass",
+        "ExploreWClass"
+    };
+
     public DetectedWindowInfo GetForegroundWindowInfo(IntPtr sessionPadHwnd)
     {
         try
@@ -45,7 +65,7 @@ public sealed class WindowDetectionService
             var windowClass = GetWindowClass(hwnd, out var classError);
             var isSessionPadWindow = hwnd == sessionPadHwnd
                 || processId == Environment.ProcessId
-                || string.Equals(processName, "SessionPad.App", StringComparison.OrdinalIgnoreCase);
+                || IsProcessName(processName, "SessionPad.App");
 
             return new DetectedWindowInfo
             {
@@ -94,6 +114,8 @@ public sealed class WindowDetectionService
         var effectiveThreshold = Math.Max(0, thresholdPx);
         DetectedWindowInfo? nearestTarget = null;
         var nearestDistance = double.MaxValue;
+        var nearestHasTitle = false;
+        string? lastRejectedReason = null;
 
         try
         {
@@ -101,25 +123,49 @@ public sealed class WindowDetectionService
             {
                 try
                 {
-                    if (!IsAttachCandidate(hwnd, sessionPadHwnd, out var candidateBounds))
+                    if (!TryCreateAttachCandidate(
+                            hwnd,
+                            sessionPadHwnd,
+                            out var candidate,
+                            out var rejectionReason))
+                    {
+                        if (!string.IsNullOrWhiteSpace(rejectionReason))
+                        {
+                            lastRejectedReason = rejectionReason;
+                            Debug.WriteLine(rejectionReason);
+                        }
+
+                        return true;
+                    }
+
+                    var distance = CalculateRectangleDistance(sessionPadBounds, candidate.Bounds);
+                    var candidateHasTitle = !string.IsNullOrWhiteSpace(candidate.Title);
+                    var isBetterCandidate = nearestTarget is null
+                        || distance < nearestDistance
+                        || (Math.Abs(distance - nearestDistance) < 0.5
+                            && candidateHasTitle
+                            && !nearestHasTitle);
+
+                    if (distance > effectiveThreshold || !isBetterCandidate)
                     {
                         return true;
                     }
 
-                    var distance = CalculateRectangleDistance(sessionPadBounds, candidateBounds);
-                    if (distance > effectiveThreshold || distance >= nearestDistance)
+                    var windowInfo = candidate.ToDetectedWindowInfo(sessionPadHwnd);
+                    if (!IsUsableExternalTarget(windowInfo, out rejectionReason))
                     {
-                        return true;
-                    }
+                        if (!string.IsNullOrWhiteSpace(rejectionReason))
+                        {
+                            lastRejectedReason = rejectionReason;
+                            Debug.WriteLine(rejectionReason);
+                        }
 
-                    var windowInfo = GetWindowInfo(hwnd, sessionPadHwnd);
-                    if (!IsUsableExternalTarget(windowInfo))
-                    {
                         return true;
                     }
 
                     nearestTarget = windowInfo;
                     nearestDistance = distance;
+                    nearestHasTitle = candidateHasTitle;
                 }
                 catch (Exception ex)
                 {
@@ -144,7 +190,9 @@ public sealed class WindowDetectionService
 
         if (nearestTarget is null)
         {
-            status = $"No nearby target window within {effectiveThreshold}px.";
+            status = lastRejectedReason is null
+                ? $"No nearby target window within {effectiveThreshold}px."
+                : $"No nearby target window within {effectiveThreshold}px. {lastRejectedReason}";
             return null;
         }
 
@@ -152,41 +200,167 @@ public sealed class WindowDetectionService
         return nearestTarget;
     }
 
-    private static bool IsAttachCandidate(IntPtr hwnd, IntPtr sessionPadHwnd, out NativeRect bounds)
+    private static bool TryCreateAttachCandidate(
+        IntPtr hwnd,
+        IntPtr sessionPadHwnd,
+        out AttachCandidate candidate,
+        out string? rejectionReason)
     {
-        bounds = default;
+        candidate = default;
+        rejectionReason = null;
 
-        if (hwnd == IntPtr.Zero || hwnd == sessionPadHwnd)
+        var processId = GetProcessId(hwnd, out _);
+        var processName = GetProcessName(processId, out _);
+        var title = GetWindowTitle(hwnd, out _);
+        var windowClass = GetWindowClass(hwnd, out _) ?? string.Empty;
+        var bounds = GetBounds(hwnd, out _);
+        var isWindow = hwnd != IntPtr.Zero && User32.IsWindow(hwnd);
+        var isVisible = hwnd != IntPtr.Zero && User32.IsWindowVisible(hwnd);
+        var isMinimized = hwnd != IntPtr.Zero && User32.IsIconic(hwnd);
+
+        if (ShouldRejectAttachCandidate(
+                hwnd,
+                sessionPadHwnd,
+                processName,
+                processId,
+                title,
+                windowClass,
+                bounds,
+                isWindow,
+                isVisible,
+                isMinimized,
+                out rejectionReason))
         {
             return false;
         }
 
-        if (IsCurrentProcessWindow(hwnd))
-        {
-            return false;
-        }
+        candidate = new AttachCandidate(
+            hwnd,
+            processId,
+            processName,
+            title,
+            windowClass,
+            bounds);
 
-        if (!User32.IsWindow(hwnd) || !User32.IsWindowVisible(hwnd) || User32.IsIconic(hwnd))
-        {
-            return false;
-        }
-
-        if (!User32.GetWindowRect(hwnd, out bounds))
-        {
-            return false;
-        }
-
-        return bounds.Right > bounds.Left && bounds.Bottom > bounds.Top;
+        return true;
     }
 
-    private static bool IsUsableExternalTarget(DetectedWindowInfo window)
+    private static bool ShouldRejectAttachCandidate(
+        IntPtr hwnd,
+        IntPtr sessionPadHwnd,
+        string processName,
+        int processId,
+        string title,
+        string windowClass,
+        NativeRect bounds,
+        bool isWindow,
+        bool isVisible,
+        bool isMinimized,
+        out string reason)
     {
-        return window.Hwnd != IntPtr.Zero
-            && !window.IsCurrentProcessWindow
-            && window.IsVisible
-            && !window.IsMinimized
-            && window.Width > 0
-            && window.Height > 0;
+        reason = string.Empty;
+
+        if (hwnd == IntPtr.Zero)
+        {
+            reason = "Drag attach skipped: empty window handle.";
+            return true;
+        }
+
+        if (hwnd == sessionPadHwnd)
+        {
+            reason = "Drag attach skipped: SessionPad window.";
+            return true;
+        }
+
+        if (processId == Environment.ProcessId || IsProcessName(processName, "SessionPad.App"))
+        {
+            reason = "Drag attach skipped: SessionPad-owned window.";
+            return true;
+        }
+
+        if (!isWindow)
+        {
+            reason = "Drag attach skipped: invalid window.";
+            return true;
+        }
+
+        if (!isVisible)
+        {
+            reason = "Drag attach skipped: invisible window.";
+            return true;
+        }
+
+        if (isMinimized)
+        {
+            reason = "Drag attach skipped: minimized window.";
+            return true;
+        }
+
+        if (!HasUsableBounds(bounds))
+        {
+            reason = "Drag attach skipped: unusable window bounds.";
+            return true;
+        }
+
+        if (IsRejectedShellClass(windowClass))
+        {
+            reason = $"Drag attach skipped: shell/system window class {windowClass}.";
+            return true;
+        }
+
+        if (IsExplorerShellOrAmbiguousWindow(processName, title, windowClass))
+        {
+            reason = string.IsNullOrWhiteSpace(windowClass)
+                ? "Drag attach skipped: ambiguous explorer shell window."
+                : $"Drag attach skipped: explorer shell window {windowClass}.";
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(title) && IsFullMonitorOrWorkAreaWindow(hwnd, bounds))
+        {
+            reason = "Drag attach skipped: titleless full-screen background window.";
+            return true;
+        }
+
+        reason = string.Empty;
+        return false;
+    }
+
+    private static bool IsUsableExternalTarget(DetectedWindowInfo window, out string? rejectionReason)
+    {
+        rejectionReason = null;
+
+        if (window.Hwnd == IntPtr.Zero)
+        {
+            rejectionReason = "Drag attach skipped: empty window handle.";
+            return false;
+        }
+
+        if (window.IsCurrentProcessWindow || IsProcessName(window.ProcessName, "SessionPad.App"))
+        {
+            rejectionReason = "Drag attach skipped: SessionPad-owned window.";
+            return false;
+        }
+
+        if (!window.IsVisible)
+        {
+            rejectionReason = "Drag attach skipped: invisible window.";
+            return false;
+        }
+
+        if (window.IsMinimized)
+        {
+            rejectionReason = "Drag attach skipped: minimized window.";
+            return false;
+        }
+
+        if (window.Width <= 0 || window.Height <= 0)
+        {
+            rejectionReason = "Drag attach skipped: unusable window bounds.";
+            return false;
+        }
+
+        return true;
     }
 
     private static bool IsCurrentProcessWindow(IntPtr hwnd)
@@ -223,6 +397,80 @@ public sealed class WindowDetectionService
         }
 
         return Math.Sqrt(((double)horizontalGap * horizontalGap) + ((double)verticalGap * verticalGap));
+    }
+
+    private static bool HasUsableBounds(NativeRect bounds)
+    {
+        return bounds.Right > bounds.Left && bounds.Bottom > bounds.Top;
+    }
+
+    private static bool IsRejectedShellClass(string? windowClass)
+    {
+        return !string.IsNullOrWhiteSpace(windowClass)
+            && RejectedDragAttachClasses.Contains(windowClass);
+    }
+
+    private static bool IsExplorerShellOrAmbiguousWindow(
+        string processName,
+        string title,
+        string? windowClass)
+    {
+        if (!IsProcessName(processName, "explorer"))
+        {
+            return false;
+        }
+
+        return string.IsNullOrWhiteSpace(title)
+            || string.IsNullOrWhiteSpace(windowClass)
+            || !AllowedExplorerWindowClasses.Contains(windowClass);
+    }
+
+    private static bool IsFullMonitorOrWorkAreaWindow(IntPtr hwnd, NativeRect bounds)
+    {
+        var monitor = User32.MonitorFromWindow(hwnd, User32.MonitorDefaultToNearest);
+        if (monitor == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        var monitorInfo = new MonitorInfo
+        {
+            Size = Marshal.SizeOf<MonitorInfo>()
+        };
+
+        if (!User32.GetMonitorInfoW(monitor, ref monitorInfo))
+        {
+            return false;
+        }
+
+        return ContainsWithTolerance(bounds, monitorInfo.Monitor)
+            || ContainsWithTolerance(bounds, monitorInfo.WorkArea);
+    }
+
+    private static bool ContainsWithTolerance(NativeRect outer, NativeRect inner)
+    {
+        const int tolerance = 8;
+
+        return outer.Left <= inner.Left + tolerance
+            && outer.Top <= inner.Top + tolerance
+            && outer.Right >= inner.Right - tolerance
+            && outer.Bottom >= inner.Bottom - tolerance;
+    }
+
+    private static bool IsProcessName(string processName, string expected)
+    {
+        return string.Equals(
+            NormalizeProcessName(processName),
+            NormalizeProcessName(expected),
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizeProcessName(string processName)
+    {
+        var normalized = processName.Trim();
+        return normalized.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+            ? normalized[..^4]
+            : normalized;
     }
 
     private static int GetProcessId(IntPtr hwnd, out string? error)
@@ -375,5 +623,39 @@ public sealed class WindowDetectionService
             .ToArray();
 
         return presentErrors.Length == 0 ? null : string.Join("; ", presentErrors);
+    }
+
+    private readonly record struct AttachCandidate(
+        IntPtr Hwnd,
+        int ProcessId,
+        string ProcessName,
+        string Title,
+        string? WindowClass,
+        NativeRect Bounds)
+    {
+        public DetectedWindowInfo ToDetectedWindowInfo(IntPtr sessionPadHwnd)
+        {
+            var isSessionPadWindow = Hwnd == sessionPadHwnd
+                || ProcessId == Environment.ProcessId
+                || IsProcessName(ProcessName, "SessionPad.App");
+
+            return new DetectedWindowInfo
+            {
+                Hwnd = Hwnd,
+                HwndHex = FormatHwnd(Hwnd),
+                ProcessName = ProcessName,
+                Title = Title,
+                ProcessId = ProcessId,
+                Left = Bounds.Left,
+                Top = Bounds.Top,
+                Right = Bounds.Right,
+                Bottom = Bounds.Bottom,
+                IsMinimized = false,
+                IsVisible = true,
+                IsSessionPadWindow = isSessionPadWindow,
+                WindowClass = WindowClass,
+                Error = null
+            };
+        }
     }
 }

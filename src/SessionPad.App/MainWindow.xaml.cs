@@ -395,6 +395,12 @@ public partial class MainWindow : Window
 
     private static string CreateTargetLabel(DetectedWindowInfo detectedWindow)
     {
+        if (!string.IsNullOrWhiteSpace(detectedWindow.ProcessName)
+            && !string.IsNullOrWhiteSpace(detectedWindow.Title))
+        {
+            return $"{detectedWindow.ProcessName} / {detectedWindow.Title}";
+        }
+
         if (!string.IsNullOrWhiteSpace(detectedWindow.Title))
         {
             return detectedWindow.Title;

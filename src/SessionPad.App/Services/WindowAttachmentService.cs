@@ -215,7 +215,10 @@ public sealed class WindowAttachmentService
     private static bool IsSessionPadTarget(IntPtr sessionPadHwnd, DetectedWindowInfo target)
     {
         return target.Hwnd != IntPtr.Zero
-            && (target.Hwnd == sessionPadHwnd || target.IsCurrentProcessWindow || IsCurrentProcessWindow(target.Hwnd));
+            && (target.Hwnd == sessionPadHwnd
+                || target.IsCurrentProcessWindow
+                || IsSessionPadProcess(target.ProcessName)
+                || IsCurrentProcessWindow(target.Hwnd));
     }
 
     private static bool IsCurrentProcessWindow(IntPtr hwnd)
@@ -235,6 +238,17 @@ public sealed class WindowAttachmentService
             Debug.WriteLine($"SessionPad could not verify target process id: {ex.Message}");
             return false;
         }
+    }
+
+    private static bool IsSessionPadProcess(string processName)
+    {
+        var normalized = processName.Trim();
+        if (normalized.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+        {
+            normalized = normalized[..^4];
+        }
+
+        return string.Equals(normalized, "SessionPad.App", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryReadSessionSize(
