@@ -40,9 +40,11 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string _startupStatus = "Startup ready";
     private string _lastCommandCopyStatus = "Ready";
     private string _lastDragAttachStatus = "Drag near a window to attach.";
+    private string _activeNoteTab = "Key";
     private bool _startOnLogin;
     private bool _isDarkTheme;
     private bool _isCurrentSessionPinned;
+    private bool _isSettingsOpen;
     private string _newSessionName = string.Empty;
     private string _newPinnedText = string.Empty;
     private string _newTodoText = string.Empty;
@@ -76,6 +78,8 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 
         ExpandCommand = new RelayCommand(() => PanelState = NotePanelState.CompactNote);
         CollapseCommand = new RelayCommand(() => PanelState = NotePanelState.DockedTab);
+        SelectNoteTabCommand = new RelayCommand(SelectNoteTab);
+        ToggleSettingsCommand = new RelayCommand(() => IsSettingsOpen = !IsSettingsOpen);
         RenameSessionCommand = new RelayCommand(RenameSession);
         OpenLocalDataFolderCommand = new RelayCommand(OpenLocalDataFolder);
         DeleteLocalDataCommand = new RelayCommand(() => DeleteLocalDataRequested?.Invoke(this, EventArgs.Empty));
@@ -101,6 +105,10 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public ICommand ExpandCommand { get; }
 
     public ICommand CollapseCommand { get; }
+
+    public ICommand SelectNoteTabCommand { get; }
+
+    public ICommand ToggleSettingsCommand { get; }
 
     public ICommand RenameSessionCommand { get; }
 
@@ -156,6 +164,40 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public bool IsCompactNote => PanelState == NotePanelState.CompactNote;
 
     public int OpenTodoCount => TodoItems.Count(item => !item.IsDone);
+
+    public string ActiveNoteTab
+    {
+        get => _activeNoteTab;
+        set
+        {
+            var normalizedTab = NormalizeNoteTab(value);
+            if (_activeNoteTab == normalizedTab)
+            {
+                return;
+            }
+
+            _activeNoteTab = normalizedTab;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsKeyTabActive));
+            OnPropertyChanged(nameof(IsTodoTabActive));
+            OnPropertyChanged(nameof(IsCommandsTabActive));
+            OnPropertyChanged(nameof(IsNotesTabActive));
+        }
+    }
+
+    public bool IsKeyTabActive => ActiveNoteTab == "Key";
+
+    public bool IsTodoTabActive => ActiveNoteTab == "Todo";
+
+    public bool IsCommandsTabActive => ActiveNoteTab == "Commands";
+
+    public bool IsNotesTabActive => ActiveNoteTab == "Notes";
+
+    public bool IsSettingsOpen
+    {
+        get => _isSettingsOpen;
+        set => SetField(ref _isSettingsOpen, value);
+    }
 
     public string CurrentSessionId
     {
@@ -592,6 +634,11 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         }
     }
 
+    private void SelectNoteTab(object? tab)
+    {
+        ActiveNoteTab = tab as string ?? "Key";
+    }
+
     private void ReplaceItems(SessionNote note)
     {
         PinnedItems.Clear();
@@ -878,6 +925,17 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         field = value;
         OnPropertyChanged(propertyName);
         return true;
+    }
+
+    private static string NormalizeNoteTab(string? tab)
+    {
+        return tab switch
+        {
+            "Todo" => "Todo",
+            "Commands" => "Commands",
+            "Notes" => "Notes",
+            _ => "Key"
+        };
     }
 
     private void SetCurrentSessionPinnedState(bool isPinned, bool forceNotify = false)
