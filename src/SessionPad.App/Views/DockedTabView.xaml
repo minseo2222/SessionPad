@@ -4,10 +4,10 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
-             d:DesignHeight="96"
-             d:DesignWidth="64">
-    <Border Width="64"
-            Height="96"
+             d:DesignHeight="116"
+             d:DesignWidth="84">
+    <Border Width="84"
+            Height="116"
             Padding="8"
             Background="#20242A"
             BorderBrush="#3D4652"
@@ -25,16 +25,29 @@
                            FontWeight="SemiBold"
                            Foreground="#F5F7FA"
                            HorizontalAlignment="Center" />
-                <TextBlock Text="{Binding OpenTodoCount}"
-                           Margin="0,8,0,0"
-                           FontSize="16"
+                <TextBlock Text="SessionPad"
+                           Margin="0,4,0,0"
+                           FontSize="10"
+                           Foreground="#C7D0DA"
+                           TextTrimming="CharacterEllipsis"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding OpenTodoCount, StringFormat={}TODO {0}}"
+                           Margin="0,7,0,0"
+                           FontSize="13"
                            FontWeight="SemiBold"
                            Foreground="#9AD0FF"
                            HorizontalAlignment="Center" />
-                <TextBlock Text="Open"
-                           Margin="0,8,0,0"
+                <TextBlock Text="{Binding CurrentSessionKind}"
+                           Margin="0,5,0,0"
                            FontSize="10"
                            Foreground="#C7D0DA"
+                           MaxWidth="64"
+                           TextTrimming="CharacterEllipsis"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="Expand"
+                           Margin="0,5,0,0"
+                           FontSize="10"
+                           Foreground="#F5F7FA"
                            HorizontalAlignment="Center" />
             </StackPanel>
         </Button>

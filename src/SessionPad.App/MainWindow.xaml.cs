@@ -16,6 +16,7 @@ public partial class MainWindow : Window
     private readonly HotkeyService _hotkeyService = new();
     private readonly WindowDetectionService _windowDetectionService = new();
     private readonly WindowAttachmentService _windowAttachmentService = new();
+    private readonly LocalDataService _localDataService;
     private readonly NoteStorageService _noteStorageService;
     private readonly SessionMatcher _sessionMatcher;
     private readonly FloatingNoteViewModel _viewModel;
@@ -26,9 +27,11 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        _localDataService = new LocalDataService();
         _noteStorageService = new NoteStorageService();
         _sessionMatcher = new SessionMatcher(_noteStorageService);
-        _viewModel = new FloatingNoteViewModel(_noteStorageService);
+        _viewModel = new FloatingNoteViewModel(_noteStorageService, _localDataService);
+        _viewModel.DeleteLocalDataRequested += OnDeleteLocalDataRequested;
 
         InitializeComponent();
         DataContext = _viewModel;
@@ -55,6 +58,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _viewModel.DeleteLocalDataRequested -= OnDeleteLocalDataRequested;
         _attachmentTimer.Stop();
         _attachmentTimer.Tick -= OnAttachmentTimerTick;
         _windowAttachmentService.Detach("SessionPad closed.");
@@ -258,6 +262,36 @@ public partial class MainWindow : Window
         {
             Debug.WriteLine($"SessionPad could not activate the window: {ex}");
         }
+    }
+
+    private void OnDeleteLocalDataRequested(object? sender, EventArgs e)
+    {
+        var result = MessageBox.Show(
+            this,
+            "Delete all local SessionPad data? This removes saved notes and sessions from this device. This cannot be undone.",
+            "Delete Local Data",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+
+        if (result != MessageBoxResult.Yes)
+        {
+            _viewModel.SetLocalDataStatus("Delete canceled. Local data was not changed.");
+            return;
+        }
+
+        _attachmentTimer.Stop();
+        var attachmentResult = _windowAttachmentService.Detach("Local data deleted.");
+        _viewModel.SetAttachmentResult(attachmentResult);
+
+        if (_localDataService.DeleteAllLocalData(out var error))
+        {
+            _viewModel.ResetAfterLocalDataDeleted();
+            ShowAndRestoreSafely();
+            return;
+        }
+
+        _viewModel.SetLocalDataStatus($"Delete failed: {error ?? "Unknown error"}");
     }
 
 }

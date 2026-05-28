@@ -13,6 +13,7 @@ namespace SessionPad.App.ViewModels;
 public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 {
     private readonly NoteStorageService _storageService;
+    private readonly LocalDataService _localDataService;
     private SessionSummary? _currentSession;
     private DateTimeOffset _createdAt = DateTimeOffset.UtcNow;
     private NotePanelState _panelState = NotePanelState.CompactNote;
@@ -30,22 +31,26 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string? _attachmentSide;
     private string? _attachmentError;
     private string? _lastFollowUpdateText;
+    private string _localDataStatus = "Local data ready";
     private string _newPinnedText = string.Empty;
     private string _newTodoText = string.Empty;
     private string _newCommandText = string.Empty;
     private string _newNoteText = string.Empty;
 
     public FloatingNoteViewModel()
-        : this(new NoteStorageService())
+        : this(new NoteStorageService(), new LocalDataService())
     {
     }
 
-    public FloatingNoteViewModel(NoteStorageService storageService)
+    public FloatingNoteViewModel(NoteStorageService storageService, LocalDataService localDataService)
     {
         _storageService = storageService;
+        _localDataService = localDataService;
 
         ExpandCommand = new RelayCommand(() => PanelState = NotePanelState.CompactNote);
         CollapseCommand = new RelayCommand(() => PanelState = NotePanelState.DockedTab);
+        OpenLocalDataFolderCommand = new RelayCommand(OpenLocalDataFolder);
+        DeleteLocalDataCommand = new RelayCommand(() => DeleteLocalDataRequested?.Invoke(this, EventArgs.Empty));
 
         AddPinnedCommand = new RelayCommand(AddPinned);
         DeletePinnedCommand = new RelayCommand(DeletePinned);
@@ -62,9 +67,15 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    public event EventHandler? DeleteLocalDataRequested;
+
     public ICommand ExpandCommand { get; }
 
     public ICommand CollapseCommand { get; }
+
+    public ICommand OpenLocalDataFolderCommand { get; }
+
+    public ICommand DeleteLocalDataCommand { get; }
 
     public ICommand AddPinnedCommand { get; }
 
@@ -153,6 +164,14 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     {
         get => _currentSessionMatchKey;
         private set => SetField(ref _currentSessionMatchKey, value);
+    }
+
+    public string LocalDataPath => _localDataService.GetAppDataDirectory();
+
+    public string LocalDataStatus
+    {
+        get => _localDataStatus;
+        private set => SetField(ref _localDataStatus, value);
     }
 
     public DetectedWindowInfo? LastDetectedWindow
@@ -270,6 +289,20 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         CurrentSessionStatus = status;
     }
 
+    public void SetLocalDataStatus(string status)
+    {
+        LocalDataStatus = status;
+    }
+
+    public void ResetAfterLocalDataDeleted()
+    {
+        _currentSession = null;
+        ApplyDefaultSessionContext("Local data deleted. Default note reset.");
+        ClearNewItemInputs();
+        LoadDefaultItems();
+        LocalDataStatus = "Local data deleted. Future edits will recreate local JSON files.";
+    }
+
     private void LoadDefaultNote()
     {
         _currentSession = null;
@@ -292,10 +325,29 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         _createdAt = DateTimeOffset.UtcNow;
         PanelState = NotePanelState.CompactNote;
 
+        PinnedItems.Clear();
+        CommandItems.Clear();
+        NoteItems.Clear();
+        ClearTodoItems();
+
         PinnedItems.Add(new PinnedItemViewModel("p1", "Keep this note tied to the current work context."));
         TodoItems.Add(new TodoItemViewModel("t1", "Sketch Slice 3 persistence behavior."));
         CommandItems.Add(new CommandItemViewModel("c1", "dotnet build"));
         NoteItems.Add(new NoteItemViewModel("n1", "Slice 3 saves the default note locally as JSON."));
+    }
+
+    private void OpenLocalDataFolder()
+    {
+        try
+        {
+            _localDataService.OpenAppDataDirectory();
+            LocalDataStatus = $"Opened {LocalDataPath}";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            Debug.WriteLine($"SessionPad could not open local data folder: {ex.Message}");
+            LocalDataStatus = $"Open folder failed: {ex.Message}";
+        }
     }
 
     private void ReplaceItems(SessionNote note)

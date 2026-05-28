@@ -77,6 +77,44 @@
                             BorderThickness="1"
                             CornerRadius="4">
                         <StackPanel>
+                            <TextBlock Text="Local Data"
+                                       FontWeight="SemiBold"
+                                       Foreground="#111827" />
+                            <TextBlock Margin="0,6,0,0"
+                                       Foreground="#334155"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding LocalDataPath, Mode=OneWay, FallbackValue=Storage path unavailable, StringFormat={}Path: {0}}" />
+                            <TextBlock Margin="0,6,0,0"
+                                       Foreground="#475569"
+                                       TextWrapping="Wrap"
+                                       Text="SessionPad stores user-entered notes locally. It does not use cloud sync, login, telemetry, screen scraping, or terminal scraping." />
+                            <DockPanel Margin="0,8,0,0">
+                                <Button DockPanel.Dock="Left"
+                                        Command="{Binding OpenLocalDataFolderCommand}"
+                                        Content="Open Folder"
+                                        MinWidth="88"
+                                        Padding="8,4" />
+                                <Button DockPanel.Dock="Right"
+                                        Command="{Binding DeleteLocalDataCommand}"
+                                        Content="Delete All Local Data"
+                                        MinWidth="132"
+                                        Padding="8,4"
+                                        Margin="8,0,0,0" />
+                            </DockPanel>
+                            <TextBlock Margin="0,8,0,0"
+                                       Foreground="#B45309"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding LocalDataStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Local data ready, StringFormat={}Status: {0}}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="10"
+                            Margin="0,0,0,8"
+                            Background="White"
+                            BorderBrush="#E2E8F0"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <StackPanel>
                             <!-- DetectedWindowInfo is read-only debug state. Use TextBlock or Mode=OneWay bindings only. -->
                             <TextBlock Text="Detected Window"
                                        FontWeight="SemiBold"

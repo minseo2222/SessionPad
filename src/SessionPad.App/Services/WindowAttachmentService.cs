@@ -304,8 +304,10 @@ public sealed class WindowAttachmentService
         {
             var rightX = targetBounds.Right + Gap;
             var leftX = targetBounds.Left - Gap - sessionWidth;
+            var rightSpace = workArea.Right - rightX;
+            var leftSpace = targetBounds.Left - Gap - workArea.Left;
 
-            if (rightX + sessionWidth <= workArea.Right)
+            if (rightSpace >= sessionWidth)
             {
                 x = rightX;
                 side = "Right";
@@ -317,8 +319,16 @@ public sealed class WindowAttachmentService
             }
             else
             {
-                x = Clamp(rightX, workArea.Left, workArea.Right - sessionWidth);
-                side = "Clamped";
+                if (rightSpace >= leftSpace)
+                {
+                    x = Clamp(rightX, workArea.Left, workArea.Right - sessionWidth);
+                    side = "Clamped Right";
+                }
+                else
+                {
+                    x = Clamp(leftX, workArea.Left, workArea.Right - sessionWidth);
+                    side = "Clamped Left";
+                }
             }
 
             y = Clamp(targetBounds.Top, workArea.Top, workArea.Bottom - sessionHeight);
