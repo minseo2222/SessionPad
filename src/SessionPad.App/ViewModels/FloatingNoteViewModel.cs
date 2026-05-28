@@ -17,6 +17,8 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private readonly LocalDataService _localDataService;
     private readonly ClipboardService _clipboardService;
     private readonly StartupService _startupService = new();
+    private readonly SettingsService _settingsService = new();
+    private readonly ThemeService _themeService = new();
     private SessionSummary? _currentSession;
     private DateTimeOffset _createdAt = DateTimeOffset.UtcNow;
     private NotePanelState _panelState = NotePanelState.CompactNote;
@@ -39,6 +41,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string _lastCommandCopyStatus = "Ready";
     private string _lastDragAttachStatus = "Drag near a window to attach.";
     private bool _startOnLogin;
+    private bool _isDarkTheme;
     private bool _isCurrentSessionPinned;
     private string _newSessionName = string.Empty;
     private string _newPinnedText = string.Empty;
@@ -66,6 +69,10 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         _clipboardService = clipboardService;
         _startOnLogin = _startupService.IsEnabled();
         _startupStatus = _startOnLogin ? "Enabled" : "Disabled";
+        _isDarkTheme = string.Equals(
+            _themeService.CurrentTheme,
+            ThemeService.DarkThemeName,
+            StringComparison.OrdinalIgnoreCase);
 
         ExpandCommand = new RelayCommand(() => PanelState = NotePanelState.CompactNote);
         CollapseCommand = new RelayCommand(() => PanelState = NotePanelState.DockedTab);
@@ -253,6 +260,24 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     {
         get => _startupStatus;
         private set => SetField(ref _startupStatus, value);
+    }
+
+    public bool IsDarkTheme
+    {
+        get => _isDarkTheme;
+        set
+        {
+            if (_isDarkTheme == value)
+            {
+                return;
+            }
+
+            var theme = value ? ThemeService.DarkThemeName : ThemeService.LightThemeName;
+            _themeService.ApplyTheme(theme);
+            _settingsService.SaveTheme(theme);
+            _isDarkTheme = value;
+            OnPropertyChanged();
+        }
     }
 
     public string LastCommandCopyStatus

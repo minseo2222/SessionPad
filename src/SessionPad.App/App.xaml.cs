@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Interop;
+using SessionPad.App.Services;
 
 namespace SessionPad.App;
 
@@ -55,6 +56,10 @@ public partial class App : System.Windows.Application
         }
 
         base.OnStartup(e);
+
+        var settingsService = new SettingsService();
+        var themeService = new ThemeService();
+        themeService.ApplyTheme(settingsService.LoadTheme());
 
         var startSilent = e.Args.Any(argument =>
             string.Equals(argument, "--silent", StringComparison.OrdinalIgnoreCase));

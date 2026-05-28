@@ -12,8 +12,8 @@
         MinHeight="420"
         WindowStartupLocation="CenterScreen"
         ShowInTaskbar="True"
-        Background="White">
-    <Grid Background="White">
+        Background="{DynamicResource Surface.Base}">
+    <Grid Background="{DynamicResource Surface.Base}">
         <views:DockedTabView HorizontalAlignment="Center"
                              VerticalAlignment="Center">
             <views:DockedTabView.Style>

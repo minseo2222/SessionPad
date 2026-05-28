@@ -9,10 +9,10 @@
     <Border Width="340"
             MaxHeight="520"
             Padding="14"
-            Background="#F8FAFC"
-            BorderBrush="#CBD5E1"
+            Background="{DynamicResource Surface.Base}"
+            BorderBrush="{DynamicResource Border.Hairline}"
             BorderThickness="1"
-            CornerRadius="6">
+            CornerRadius="8">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -28,13 +28,13 @@
                 <TextBlock Text="SessionPad"
                            FontSize="16"
                            FontWeight="SemiBold"
-                           Foreground="#111827"
+                           Foreground="{DynamicResource Text.Primary}"
                            VerticalAlignment="Center" />
                 <Border Grid.Column="1"
                         Margin="8,0,8,0"
                         Padding="8,4"
-                        Background="#E2E8F0"
-                        BorderBrush="#CBD5E1"
+                        Background="{DynamicResource Surface.Raised}"
+                        BorderBrush="{DynamicResource Border.Hairline}"
                         BorderThickness="1"
                         CornerRadius="4"
                         Cursor="SizeAll"
@@ -42,7 +42,7 @@
                         MouseLeftButtonDown="OnDragAttachMouseLeftButtonDown">
                     <TextBlock Text="Drag"
                                FontSize="12"
-                               Foreground="#334155"
+                               Foreground="{DynamicResource Text.Muted}"
                                VerticalAlignment="Center" />
                 </Border>
                 <Button Grid.Column="2"
@@ -58,33 +58,33 @@
                 <StackPanel>
                     <Border Padding="10"
                             Margin="0,0,0,8"
-                            Background="White"
-                            BorderBrush="#E2E8F0"
+                            Background="{DynamicResource Surface.Raised}"
+                            BorderBrush="{DynamicResource Border.Hairline}"
                             BorderThickness="1"
                             CornerRadius="4">
                         <StackPanel>
                             <TextBlock Text="Current Session"
                                        FontWeight="SemiBold"
-                                       Foreground="#111827" />
+                                       Foreground="{DynamicResource Text.Primary}" />
                             <TextBlock Margin="0,6,0,0"
-                                       Foreground="#334155"
+                                       Foreground="{DynamicResource Text.Muted}"
                                        TextWrapping="Wrap"
                                        Text="{Binding CurrentSessionDisplayName, Mode=OneWay, TargetNullValue=(none), FallbackValue=Name: (none), StringFormat={}Name: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        Text="{Binding CurrentSessionKind, Mode=OneWay, TargetNullValue=(none), FallbackValue=Type: (none), StringFormat={}Type: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        TextWrapping="Wrap"
                                        Text="{Binding CurrentSessionId, Mode=OneWay, TargetNullValue=(none), FallbackValue=Session ID: (none), StringFormat={}Session ID: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        TextWrapping="Wrap"
                                        Text="{Binding CurrentNormalizedWindowTitle, Mode=OneWay, TargetNullValue=(none), FallbackValue=Normalized title: (none), StringFormat={}Normalized title: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        TextWrapping="Wrap"
                                        Text="{Binding CurrentSessionMatchKey, Mode=OneWay, TargetNullValue=(none), FallbackValue=Match key: (none), StringFormat={}Match key: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        TextWrapping="Wrap"
                                        Text="{Binding CurrentSessionNoteFile, Mode=OneWay, TargetNullValue=(none), FallbackValue=Note file: (none), StringFormat={}Note file: {0}}" />
-                            <TextBlock Foreground="#B45309"
+                            <TextBlock Foreground="{DynamicResource Status}"
                                        TextWrapping="Wrap"
                                        Text="{Binding CurrentSessionStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Session status: Ready, StringFormat={}Session status: {0}}" />
                             <TextBox Margin="0,8,0,0"
@@ -102,27 +102,30 @@
 
                     <Border Padding="10"
                             Margin="0,0,0,8"
-                            Background="White"
-                            BorderBrush="#E2E8F0"
+                            Background="{DynamicResource Surface.Raised}"
+                            BorderBrush="{DynamicResource Border.Hairline}"
                             BorderThickness="1"
                             CornerRadius="4">
                         <StackPanel>
                             <TextBlock Text="Local Data"
                                        FontWeight="SemiBold"
-                                       Foreground="#111827" />
+                                       Foreground="{DynamicResource Text.Primary}" />
                             <TextBlock Margin="0,6,0,0"
-                                       Foreground="#334155"
+                                       Foreground="{DynamicResource Text.Muted}"
                                        TextWrapping="Wrap"
                                        Text="{Binding LocalDataPath, Mode=OneWay, FallbackValue=Storage path unavailable, StringFormat={}Path: {0}}" />
                             <TextBlock Margin="0,6,0,0"
-                                       Foreground="#475569"
+                                       Foreground="{DynamicResource Text.Faint}"
                                        TextWrapping="Wrap"
                                        Text="SessionPad stores user-entered notes locally. It does not use cloud sync, login, telemetry, screen scraping, or terminal scraping." />
                             <CheckBox Margin="0,8,0,0"
                                       Content="Start with Windows"
                                       IsChecked="{Binding StartOnLogin, Mode=TwoWay}" />
+                            <CheckBox Margin="0,8,0,0"
+                                      Content="Dark theme"
+                                      IsChecked="{Binding IsDarkTheme, Mode=TwoWay}" />
                             <TextBlock Margin="0,6,0,0"
-                                       Foreground="#B45309"
+                                       Foreground="{DynamicResource Status}"
                                        TextWrapping="Wrap"
                                        Text="{Binding StartupStatus, Mode=OneWay, FallbackValue=Startup ready, StringFormat={}Startup: {0}}" />
                             <DockPanel Margin="0,8,0,0">
@@ -139,7 +142,7 @@
                                         Margin="8,0,0,0" />
                             </DockPanel>
                             <TextBlock Margin="0,8,0,0"
-                                       Foreground="#B45309"
+                                       Foreground="{DynamicResource Status}"
                                        TextWrapping="Wrap"
                                        Text="{Binding LocalDataStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Local data ready, StringFormat={}Status: {0}}" />
                         </StackPanel>
@@ -147,55 +150,55 @@
 
                     <Border Padding="10"
                             Margin="0,0,0,8"
-                            Background="White"
-                            BorderBrush="#E2E8F0"
+                            Background="{DynamicResource Surface.Raised}"
+                            BorderBrush="{DynamicResource Border.Hairline}"
                             BorderThickness="1"
                             CornerRadius="4">
                         <StackPanel>
                             <!-- DetectedWindowInfo is read-only debug state. Use TextBlock or Mode=OneWay bindings only. -->
                             <TextBlock Text="Detected Window"
                                        FontWeight="SemiBold"
-                                       Foreground="#111827" />
+                                       Foreground="{DynamicResource Text.Primary}" />
                             <TextBlock Margin="0,6,0,0"
-                                       Foreground="#334155"
+                                       Foreground="{DynamicResource Text.Muted}"
                                        Text="{Binding LastDetectedWindow.ProcessName, Mode=OneWay, TargetNullValue=(none), FallbackValue=Process: (none), StringFormat={}Process: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        TextWrapping="Wrap"
                                        Text="{Binding LastDetectedWindow.Title, Mode=OneWay, TargetNullValue=(none), FallbackValue=Title: (none), StringFormat={}Title: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        Text="{Binding LastDetectedWindow.HwndHex, Mode=OneWay, TargetNullValue=(none), FallbackValue=HWND: (none), StringFormat={}HWND: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        Text="{Binding LastDetectedWindow.ProcessId, Mode=OneWay, TargetNullValue=(none), FallbackValue=Process ID: (none), StringFormat={}Process ID: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        TextWrapping="Wrap"
                                        Text="{Binding LastDetectedWindow.BoundsText, Mode=OneWay, TargetNullValue=(none), FallbackValue=Bounds: (none), StringFormat={}Bounds: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        Text="{Binding LastDetectedWindow.IsMinimized, Mode=OneWay, TargetNullValue=(none), FallbackValue=Minimized: (none), StringFormat={}Minimized: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        Text="{Binding LastDetectedWindow.IsVisible, Mode=OneWay, TargetNullValue=(none), FallbackValue=Visible: (none), StringFormat={}Visible: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        Text="{Binding LastDetectedWindow.IsSessionPadWindow, Mode=OneWay, TargetNullValue=(none), FallbackValue=SessionPad window: (none), StringFormat={}SessionPad window: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        Text="{Binding LastDetectedWindow.WindowClass, Mode=OneWay, TargetNullValue=(none), FallbackValue=Class: (none), StringFormat={}Class: {0}}" />
-                            <TextBlock Foreground="#B45309"
+                            <TextBlock Foreground="{DynamicResource Status}"
                                        TextWrapping="Wrap"
                                        Text="{Binding LastDetectedWindow.Error, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Status: Ready, StringFormat={}Status: {0}}" />
                             <TextBlock Margin="0,8,0,0"
-                                       Foreground="#334155"
+                                       Foreground="{DynamicResource Text.Muted}"
                                        Text="{Binding IsAttachedToWindow, Mode=OneWay, FallbackValue=Attached: False, StringFormat={}Attached: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        TextWrapping="Wrap"
                                        Text="{Binding LastDragAttachStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Drag attach: Ready, StringFormat={}Drag attach: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        Text="{Binding AttachmentSide, Mode=OneWay, TargetNullValue=(none), FallbackValue=Attach side: (none), StringFormat={}Attach side: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        Text="{Binding AttachmentStatus, Mode=OneWay, TargetNullValue=Not attached, FallbackValue=Attach status: Not attached, StringFormat={}Attach status: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        Text="{Binding IsHiddenBecauseTargetMinimized, Mode=OneWay, FallbackValue=Hidden by target minimize: False, StringFormat={}Hidden by target minimize: {0}}" />
-                            <TextBlock Foreground="#334155"
+                            <TextBlock Foreground="{DynamicResource Text.Muted}"
                                        TextWrapping="Wrap"
                                        Text="{Binding LastFollowUpdateText, Mode=OneWay, TargetNullValue=None, FallbackValue=Follow: None, StringFormat={}Follow: {0}}" />
-                            <TextBlock Foreground="#B45309"
+                            <TextBlock Foreground="{DynamicResource Status}"
                                        TextWrapping="Wrap"
                                        Text="{Binding AttachmentError, Mode=OneWay, TargetNullValue=None, FallbackValue=Attach error: None, StringFormat={}Attach error: {0}}" />
                         </StackPanel>
@@ -203,14 +206,14 @@
 
                     <Border Padding="10"
                             Margin="0,0,0,8"
-                            Background="White"
-                            BorderBrush="#E2E8F0"
+                            Background="{DynamicResource Surface.Raised}"
+                            BorderBrush="{DynamicResource Border.Hairline}"
                             BorderThickness="1"
                             CornerRadius="4">
                         <StackPanel>
                             <TextBlock Text="Pinned"
                                        FontWeight="SemiBold"
-                                       Foreground="#111827" />
+                                       Foreground="{DynamicResource Text.Primary}" />
                             <DockPanel Margin="0,8,0,0">
                                 <Button DockPanel.Dock="Right"
                                         Command="{Binding AddPinnedCommand}"
@@ -233,7 +236,7 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="{Binding Text}"
                                                        TextWrapping="Wrap"
-                                                       Foreground="#334155"
+                                                       Foreground="{DynamicResource Text.Muted}"
                                                        VerticalAlignment="Center" />
                                             <Button Grid.Column="1"
                                                     Command="{Binding DataContext.DeletePinnedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -250,14 +253,14 @@
 
                     <Border Padding="10"
                             Margin="0,0,0,8"
-                            Background="White"
-                            BorderBrush="#E2E8F0"
+                            Background="{DynamicResource Surface.Raised}"
+                            BorderBrush="{DynamicResource Border.Hairline}"
                             BorderThickness="1"
                             CornerRadius="4">
                         <StackPanel>
                             <TextBlock Text="Todo"
                                        FontWeight="SemiBold"
-                                       Foreground="#111827" />
+                                       Foreground="{DynamicResource Text.Primary}" />
                             <DockPanel Margin="0,8,0,0">
                                 <Button DockPanel.Dock="Right"
                                         Command="{Binding AddTodoCommand}"
@@ -284,7 +287,7 @@
                                             <TextBlock Grid.Column="1"
                                                        Text="{Binding Text}"
                                                        TextWrapping="Wrap"
-                                                       Foreground="#334155"
+                                                       Foreground="{DynamicResource Text.Muted}"
                                                        VerticalAlignment="Center"
                                                        Margin="8,0,0,0" />
                                             <Button Grid.Column="2"
@@ -302,14 +305,14 @@
 
                     <Border Padding="10"
                             Margin="0,0,0,8"
-                            Background="White"
-                            BorderBrush="#E2E8F0"
+                            Background="{DynamicResource Surface.Raised}"
+                            BorderBrush="{DynamicResource Border.Hairline}"
                             BorderThickness="1"
                             CornerRadius="4">
                         <StackPanel>
                             <TextBlock Text="Commands"
                                        FontWeight="SemiBold"
-                                       Foreground="#111827" />
+                                       Foreground="{DynamicResource Text.Primary}" />
                             <DockPanel Margin="0,8,0,0">
                                 <Button DockPanel.Dock="Right"
                                         Command="{Binding AddCommandItemCommand}"
@@ -322,7 +325,7 @@
                                          VerticalContentAlignment="Center" />
                             </DockPanel>
                             <TextBlock Margin="0,8,0,0"
-                                       Foreground="#B45309"
+                                       Foreground="{DynamicResource Status}"
                                        TextWrapping="Wrap"
                                        Text="{Binding LastCommandCopyStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Copy status: Ready, StringFormat={}Copy status: {0}}" />
                             <ItemsControl ItemsSource="{Binding CommandItems}"
@@ -338,8 +341,8 @@
                                             <TextBlock Text="{Binding Text}"
                                                        TextWrapping="Wrap"
                                                        FontFamily="Consolas"
-                                                       Background="#F1F5F9"
-                                                       Foreground="#1E293B"
+                                                       Background="{DynamicResource Surface.Raised}"
+                                                       Foreground="{DynamicResource Text.Primary}"
                                                        Padding="6"
                                                        VerticalAlignment="Center" />
                                             <Button Grid.Column="1"
@@ -362,14 +365,14 @@
                     </Border>
 
                     <Border Padding="10"
-                            Background="White"
-                            BorderBrush="#E2E8F0"
+                            Background="{DynamicResource Surface.Raised}"
+                            BorderBrush="{DynamicResource Border.Hairline}"
                             BorderThickness="1"
                             CornerRadius="4">
                         <StackPanel>
                             <TextBlock Text="Notes"
                                        FontWeight="SemiBold"
-                                       Foreground="#111827" />
+                                       Foreground="{DynamicResource Text.Primary}" />
                             <TextBox Text="{Binding NewNoteText, UpdateSourceTrigger=PropertyChanged}"
                                      Margin="0,8,0,0"
                                      MinHeight="54"
@@ -393,7 +396,7 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="{Binding Text}"
                                                        TextWrapping="Wrap"
-                                                       Foreground="#334155"
+                                                       Foreground="{DynamicResource Text.Muted}"
                                                        VerticalAlignment="Center" />
                                             <Button Grid.Column="1"
                                                     Command="{Binding DataContext.DeleteNoteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"

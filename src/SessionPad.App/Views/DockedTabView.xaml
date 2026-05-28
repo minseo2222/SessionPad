@@ -9,10 +9,10 @@
     <Border Width="84"
             Height="116"
             Padding="8"
-            Background="#20242A"
-            BorderBrush="#3D4652"
+            Background="{DynamicResource Surface.Raised}"
+            BorderBrush="{DynamicResource Border.Hairline}"
             BorderThickness="1"
-            CornerRadius="6">
+            CornerRadius="8">
         <Button Command="{Binding ExpandCommand}"
                 Cursor="Hand"
                 Background="Transparent"
@@ -23,31 +23,31 @@
                 <TextBlock Text="SP"
                            FontSize="18"
                            FontWeight="SemiBold"
-                           Foreground="#F5F7FA"
+                           Foreground="{DynamicResource Text.Primary}"
                            HorizontalAlignment="Center" />
                 <TextBlock Text="SessionPad"
                            Margin="0,4,0,0"
                            FontSize="10"
-                           Foreground="#C7D0DA"
+                           Foreground="{DynamicResource Text.Muted}"
                            TextTrimming="CharacterEllipsis"
                            HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding OpenTodoCount, StringFormat={}TODO {0}}"
                            Margin="0,7,0,0"
                            FontSize="13"
                            FontWeight="SemiBold"
-                           Foreground="#9AD0FF"
+                           Foreground="{DynamicResource Accent}"
                            HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding CurrentSessionKind}"
                            Margin="0,5,0,0"
                            FontSize="10"
-                           Foreground="#C7D0DA"
+                           Foreground="{DynamicResource Text.Muted}"
                            MaxWidth="64"
                            TextTrimming="CharacterEllipsis"
                            HorizontalAlignment="Center" />
                 <TextBlock Text="Expand"
                            Margin="0,5,0,0"
                            FontSize="10"
-                           Foreground="#F5F7FA"
+                           Foreground="{DynamicResource Text.Primary}"
                            HorizontalAlignment="Center" />
             </StackPanel>
         </Button>
