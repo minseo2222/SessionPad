@@ -54,7 +54,7 @@ public partial class MainWindow : Window
 
     private IntPtr OnWindowMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        if (message == User32.WmHotkey && wParam.ToInt32() == HotkeyService.ShowSessionPadHotkeyId)
+        if (message == User32.WmHotkey && wParam.ToInt64() == HotkeyService.ShowSessionPadHotkeyId)
         {
             OnHotkeyPressed();
             handled = true;
@@ -65,9 +65,30 @@ public partial class MainWindow : Window
 
     private void OnHotkeyPressed()
     {
-        var detectedWindow = _windowDetectionService.GetForegroundWindowInfo(_windowHandle);
-        _viewModel.SetLastDetectedWindow(detectedWindow);
-        ShowAndActivate();
+        try
+        {
+            var detectedWindow = _windowDetectionService.GetForegroundWindowInfo(_windowHandle);
+            _viewModel.SetLastDetectedWindow(detectedWindow);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+            _viewModel.SetLastDetectedWindow(Models.DetectedWindowInfo.FromException(ex));
+        }
+
+        ShowAndActivateSafely();
+    }
+
+    private void ShowAndActivateSafely()
+    {
+        try
+        {
+            ShowAndActivate();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"SessionPad could not show or activate the window: {ex}");
+        }
     }
 
     private void ShowAndActivate()

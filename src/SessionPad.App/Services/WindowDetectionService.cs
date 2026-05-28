@@ -10,32 +10,42 @@ public sealed class WindowDetectionService
 {
     public DetectedWindowInfo GetForegroundWindowInfo(IntPtr sessionPadHwnd)
     {
-        var hwnd = User32.GetForegroundWindow();
-        if (hwnd == IntPtr.Zero)
+        try
         {
-            return CreateErrorInfo(hwnd, "No foreground window was available.");
+            var hwnd = User32.GetForegroundWindow();
+            if (hwnd == IntPtr.Zero)
+            {
+                return DetectedWindowInfo.FromError("No foreground window was available.", hwnd);
+            }
+
+            var processId = GetProcessId(hwnd, out var processError);
+            var bounds = GetBounds(hwnd, out var boundsError);
+            var isMinimized = IsMinimized(hwnd, out var minimizedError);
+            var isVisible = IsVisible(hwnd, out var visibleError);
+            var error = JoinErrors(processError, boundsError, minimizedError, visibleError);
+
+            return new DetectedWindowInfo
+            {
+                HwndHex = FormatHwnd(hwnd),
+                ProcessName = GetProcessName(processId, out var processNameError),
+                Title = GetWindowTitle(hwnd, out var titleError),
+                ProcessId = processId,
+                Left = bounds.Left,
+                Top = bounds.Top,
+                Right = bounds.Right,
+                Bottom = bounds.Bottom,
+                IsMinimized = isMinimized,
+                IsVisible = isVisible,
+                IsSessionPadWindow = hwnd == sessionPadHwnd,
+                WindowClass = GetWindowClass(hwnd, out var classError),
+                Error = JoinErrors(error, processNameError, titleError, classError)
+            };
         }
-
-        var processId = GetProcessId(hwnd, out var processError);
-        var bounds = GetBounds(hwnd, out var boundsError);
-        var error = JoinErrors(processError, boundsError);
-
-        return new DetectedWindowInfo
+        catch (Exception ex)
         {
-            HwndHex = FormatHwnd(hwnd),
-            ProcessName = GetProcessName(processId, out var processNameError),
-            Title = GetWindowTitle(hwnd, out var titleError),
-            ProcessId = processId,
-            Left = bounds.Left,
-            Top = bounds.Top,
-            Right = bounds.Right,
-            Bottom = bounds.Bottom,
-            IsMinimized = User32.IsIconic(hwnd),
-            IsVisible = User32.IsWindowVisible(hwnd),
-            IsSessionPadWindow = hwnd == sessionPadHwnd,
-            WindowClass = GetWindowClass(hwnd, out var classError),
-            Error = JoinErrors(error, processNameError, titleError, classError)
-        };
+            Debug.WriteLine(ex);
+            return DetectedWindowInfo.FromException(ex);
+        }
     }
 
     private static int GetProcessId(IntPtr hwnd, out string? error)
@@ -45,6 +55,12 @@ public sealed class WindowDetectionService
         try
         {
             User32.GetWindowThreadProcessId(hwnd, out var processId);
+            if (processId == 0)
+            {
+                error = $"Could not read process id. Win32 error: {Marshal.GetLastWin32Error()}";
+                return 0;
+            }
+
             return checked((int)processId);
         }
         catch (Exception ex) when (ex is OverflowException or InvalidOperationException)
@@ -89,7 +105,13 @@ public sealed class WindowDetectionService
 
             var builder = new StringBuilder(length + 1);
             var copied = User32.GetWindowTextW(hwnd, builder, builder.Capacity);
-            return copied <= 0 ? string.Empty : builder.ToString();
+            if (copied <= 0)
+            {
+                error = $"Could not read window title. Win32 error: {Marshal.GetLastWin32Error()}";
+                return string.Empty;
+            }
+
+            return builder.ToString();
         }
         catch (Exception ex) when (ex is ArgumentOutOfRangeException or OutOfMemoryException)
         {
@@ -106,7 +128,13 @@ public sealed class WindowDetectionService
         {
             var builder = new StringBuilder(256);
             var copied = User32.GetClassNameW(hwnd, builder, builder.Capacity);
-            return copied <= 0 ? null : builder.ToString();
+            if (copied <= 0)
+            {
+                error = $"Could not read window class. Win32 error: {Marshal.GetLastWin32Error()}";
+                return null;
+            }
+
+            return builder.ToString();
         }
         catch (Exception ex) when (ex is ArgumentOutOfRangeException or OutOfMemoryException)
         {
@@ -128,23 +156,34 @@ public sealed class WindowDetectionService
         return default;
     }
 
-    private static DetectedWindowInfo CreateErrorInfo(IntPtr hwnd, string error)
+    private static bool IsMinimized(IntPtr hwnd, out string? error)
     {
-        return new DetectedWindowInfo
+        error = null;
+
+        try
         {
-            HwndHex = FormatHwnd(hwnd),
-            ProcessName = "(unknown)",
-            Title = string.Empty,
-            ProcessId = 0,
-            Left = 0,
-            Top = 0,
-            Right = 0,
-            Bottom = 0,
-            IsMinimized = false,
-            IsVisible = false,
-            IsSessionPadWindow = false,
-            Error = error
-        };
+            return User32.IsIconic(hwnd);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException)
+        {
+            error = $"Could not read minimized state: {ex.Message}";
+            return false;
+        }
+    }
+
+    private static bool IsVisible(IntPtr hwnd, out string? error)
+    {
+        error = null;
+
+        try
+        {
+            return User32.IsWindowVisible(hwnd);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException)
+        {
+            error = $"Could not read visibility state: {ex.Message}";
+            return false;
+        }
     }
 
     private static string FormatHwnd(IntPtr hwnd)
