@@ -128,3 +128,14 @@ Documentation Discipline
 When product or architecture decisions change, update the relevant file in docs/.
 
 Do not silently expand MVP scope.
+
+## Git Workflow
+
+- After each completed implementation task or slice, run dotnet build.
+- Only commit if the build passes.
+- Use a clear commit message describing the slice or fix.
+- Push to origin main after each successful commit.
+- Never commit bin/, obj/, secrets, credentials, tokens, or machine-specific files.
+- Never force push.
+- If push/authentication fails, report the error clearly and stop.
+- Do not auto-push unfinished or failing work.
