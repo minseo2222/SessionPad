@@ -1,76 +1,178 @@
 # SessionPad
 
-SessionPad is a Windows-first local desktop utility that attaches a lightweight note pad to an application window such as VS Code, Cursor, Windsurf, or Windows Terminal.
+SessionPad is a Windows-first local desktop utility that attaches a lightweight note pad to the app window you are working in.
 
 The product goal is simple:
 
-> When the user returns to a work window, the note associated with that work context should return with it.
+> This note belongs to the work window I am using right now.
 
-SessionPad is not a knowledge management app, not an AI assistant, not a cloud app, and not a collaboration tool.
+SessionPad v0.1 is a local release candidate. It is not a cloud app, AI assistant, team tool, IDE plugin, browser extension, or full knowledge-management system.
 
-## MVP Direction
+## v0.1 Features
 
-The MVP is a local Windows app with a small floating note window that can later attach to external application windows.
+- WPF desktop app targeting `net10.0-windows`.
+- Compact Note and Docked Tab views.
+- Pinned, Todo, Commands, and Notes sections.
+- In-memory editing with local JSON persistence.
+- Per-window note restore using `processName + normalizedWindowTitle`.
+- Global hotkey: `Ctrl+Alt+N`.
+- Attach to the current foreground window with `Ctrl+Alt+N`.
+- Manual drag attach by dragging the SessionPad handle near another app window.
+- Polling-based follow behavior for attached windows.
+- Hide when the attached target is minimized, then show again when it is restored.
+- Command Copy button that writes a user-entered command to the clipboard only after an explicit click.
+- Local Data section with storage path, Open Folder, and Delete All Local Data controls.
 
-Initial target apps:
+## Run From Source
 
-- Visual Studio Code
-- Cursor
-- Windsurf
+Prerequisites:
+
+- Windows
+- .NET 10 SDK
+
+Run:
+
+```powershell
+dotnet run --project src/SessionPad.App/SessionPad.App.csproj
+```
+
+## Build
+
+Debug build:
+
+```powershell
+dotnet build
+```
+
+Release build:
+
+```powershell
+dotnet build -c Release
+```
+
+## Publish A Local Release Build
+
+The publish script writes output under `artifacts/`, which is ignored by Git.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/publish-release.ps1
+```
+
+Default output:
+
+```text
+artifacts/SessionPad-v0.1
+```
+
+The script creates a framework-dependent publish by default. It does not create an installer, MSIX package, or signed build.
+
+## Hotkey Attach
+
+Press `Ctrl+Alt+N` while another app is focused.
+
+SessionPad detects the foreground window first, then shows/restores itself, loads or creates the matching window session, attaches beside the target window, and starts following that target.
+
+Supported MVP target examples:
+
+- VS Code
+- Notepad
 - Windows Terminal
-- PowerShell / terminal-style workflows
+- PowerShell / pwsh / console windows
+- Browsers
 
-## Technology Direction
+## Drag Attach
 
-Preferred stack:
+In Compact Note, use the `Drag` handle and release SessionPad near another application window.
 
-- WPF
-- .NET, targeting `net10.0-windows` if the SDK is available
-- Fallback to `net8.0-windows` only if .NET 10 SDK is not installed locally
-- C#
-- Local JSON storage
-- Later Win32 interop through P/Invoke
+If a valid external app window is within the attach threshold, SessionPad loads or creates that window's note session and attaches beside it. SessionPad rejects its own windows, desktop background windows, taskbar/shell windows, and ambiguous explorer shell windows.
 
-The first implementation slice should not implement external window attachment yet. It should only create a minimal runnable WPF app with the basic SessionPad UI.
+If no valid target is nearby, SessionPad stays where it is and shows a safe status.
 
-## Core Product Principles
+## Per-window Notes
 
-- Windows first
-- Local first
-- No login
-- No cloud sync
-- No telemetry in MVP
-- No AI features
-- No screen scraping
-- No terminal output scraping
-- Store only user-entered notes
-- Keep the app lightweight and focused
+SessionPad stores notes per matched window identity.
 
-## Planned Source Layout
+The v0.1 identity key is:
+
+```text
+lower(processName) + "|" + normalizedWindowTitle
+```
+
+When you return to the same process/title and press `Ctrl+Alt+N`, SessionPad restores that session's note. Runtime HWND values, detected window state, attach state, and follow state are not stored in note JSON.
+
+## Command Copy
+
+Each saved command has a Copy action.
+
+Clicking Copy writes only that command's text to the clipboard. SessionPad does not read the clipboard, paste into terminals, send keystrokes, or execute commands.
+
+## Local Data
+
+SessionPad stores local data under:
+
+```text
+%APPDATA%\SessionPad
+```
+
+Expected files include:
+
+```text
+%APPDATA%\SessionPad\
+  sessions.index.json
+  notes\
+    default.json
+    <sessionId>.json
+```
+
+The app shows this path in the Local Data section. Use Open Folder to inspect the files.
+
+To delete local data from inside the app:
+
+1. Open SessionPad.
+2. In the Local Data section, click Delete All Local Data.
+3. Confirm the warning dialog.
+
+This removes saved SessionPad notes and sessions from this device only. The app resets to a safe default note and recreates local files on future edits.
+
+## Privacy Principles
+
+SessionPad v0.1 is local-first:
+
+- No login.
+- No cloud sync.
+- No telemetry.
+- No AI features.
+- No screen scraping.
+- No terminal scraping.
+- No automatic reading of editor, browser, terminal, or project contents.
+- Clipboard is only written when the user clicks Copy on a command.
+- Clipboard is not read.
+- Only user-entered notes are stored.
+
+## Known Limitations
+
+- Window identity is currently `processName + normalizedWindowTitle`.
+- VS Code workspace/project detection is not implemented.
+- Windows Terminal tab detection is not implemented.
+- Browser URL/tab detection is not implemented.
+- UI Automation is not implemented.
+- Automatic foreground-change restore is not implemented.
+- WinEvent hook tracking is not implemented; following currently uses polling.
+- Multi-monitor and DPI behavior should still be manually tested.
+- No installer or MSIX package yet.
+
+## Project Layout
+
+```text
 src/
   SessionPad.App/
     App.xaml
     MainWindow.xaml
-    Views/
-    ViewModels/
     Models/
-    Services/
     Native/
+    Services/
+    ViewModels/
+    Views/
 docs/
-
-## MVP User Experience
-The final MVP should support:
-
-1. User presses a hotkey while focused on a work window.
-2. SessionPad creates or restores a note associated with that window.
-3. The note appears as a small docked tab beside the target window.
-4. User expands it into a compact note.
-5. User writes pinned notes, TODOs, commands, and plain notes.
-6. The note hides when the target window is minimized.
-7. The note returns when the target window is restored or reactivated.
-8. Notes are saved locally.
-
-
-## Current Status
-Empty repository / pre-implementation.
-Start with Slice 1 from docs/05_CODEX_SLICES.md.
+scripts/
+```
