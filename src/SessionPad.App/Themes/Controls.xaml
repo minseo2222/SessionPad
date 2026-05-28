@@ -127,7 +127,7 @@
         <Setter Property="Background" Value="{DynamicResource Surface.Raised}" />
         <Setter Property="BorderBrush" Value="{DynamicResource Border.Hairline}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="Padding" Value="8" />
+        <Setter Property="Padding" Value="10,6" />
         <Setter Property="FontFamily" Value="Segoe UI Variable, Segoe UI" />
         <Setter Property="CaretBrush" Value="{DynamicResource Text.Primary}" />
         <Setter Property="SelectionBrush" Value="{DynamicResource Accent}" />
