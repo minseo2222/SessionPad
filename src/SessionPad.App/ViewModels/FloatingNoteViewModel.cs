@@ -15,6 +15,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private readonly NoteStorageService _storageService;
     private DateTimeOffset _createdAt = DateTimeOffset.UtcNow;
     private NotePanelState _panelState = NotePanelState.CompactNote;
+    private DetectedWindowInfo? _lastDetectedWindow;
     private string _newPinnedText = string.Empty;
     private string _newTodoText = string.Empty;
     private string _newCommandText = string.Empty;
@@ -98,6 +99,12 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 
     public int OpenTodoCount => TodoItems.Count(item => !item.IsDone);
 
+    public DetectedWindowInfo? LastDetectedWindow
+    {
+        get => _lastDetectedWindow;
+        private set => SetField(ref _lastDetectedWindow, value);
+    }
+
     public string NewPinnedText
     {
         get => _newPinnedText;
@@ -120,6 +127,11 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     {
         get => _newNoteText;
         set => SetField(ref _newNoteText, value);
+    }
+
+    public void SetLastDetectedWindow(DetectedWindowInfo detectedWindow)
+    {
+        LastDetectedWindow = detectedWindow;
     }
 
     private void LoadNote()

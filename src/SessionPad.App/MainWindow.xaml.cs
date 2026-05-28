@@ -10,6 +10,8 @@ namespace SessionPad.App;
 public partial class MainWindow : Window
 {
     private readonly HotkeyService _hotkeyService = new();
+    private readonly WindowDetectionService _windowDetectionService = new();
+    private readonly FloatingNoteViewModel _viewModel = new();
     private HwndSource? _source;
     private IntPtr _windowHandle;
     private bool _hotkeyRegistered;
@@ -17,7 +19,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        DataContext = new FloatingNoteViewModel();
+        DataContext = _viewModel;
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -54,11 +56,18 @@ public partial class MainWindow : Window
     {
         if (message == User32.WmHotkey && wParam.ToInt32() == HotkeyService.ShowSessionPadHotkeyId)
         {
-            ShowAndActivate();
+            OnHotkeyPressed();
             handled = true;
         }
 
         return IntPtr.Zero;
+    }
+
+    private void OnHotkeyPressed()
+    {
+        var detectedWindow = _windowDetectionService.GetForegroundWindowInfo(_windowHandle);
+        _viewModel.SetLastDetectedWindow(detectedWindow);
+        ShowAndActivate();
     }
 
     private void ShowAndActivate()

@@ -43,6 +43,63 @@
                             BorderThickness="1"
                             CornerRadius="4">
                         <StackPanel>
+                            <TextBlock Text="Detected Window"
+                                       FontWeight="SemiBold"
+                                       Foreground="#111827" />
+                            <TextBlock Margin="0,6,0,0"
+                                       Foreground="#334155">
+                                <Run Text="Process: " />
+                                <Run Text="{Binding LastDetectedWindow.ProcessName, TargetNullValue=(none)}" />
+                            </TextBlock>
+                            <TextBlock Foreground="#334155"
+                                       TextWrapping="Wrap">
+                                <Run Text="Title: " />
+                                <Run Text="{Binding LastDetectedWindow.Title, TargetNullValue=(none)}" />
+                            </TextBlock>
+                            <TextBlock Foreground="#334155">
+                                <Run Text="HWND: " />
+                                <Run Text="{Binding LastDetectedWindow.HwndHex, TargetNullValue=(none)}" />
+                            </TextBlock>
+                            <TextBlock Foreground="#334155">
+                                <Run Text="Process ID: " />
+                                <Run Text="{Binding LastDetectedWindow.ProcessId, TargetNullValue=(none)}" />
+                            </TextBlock>
+                            <TextBlock Foreground="#334155"
+                                       TextWrapping="Wrap">
+                                <Run Text="Bounds: " />
+                                <Run Text="{Binding LastDetectedWindow.BoundsText, TargetNullValue=(none)}" />
+                            </TextBlock>
+                            <TextBlock Foreground="#334155">
+                                <Run Text="Minimized: " />
+                                <Run Text="{Binding LastDetectedWindow.IsMinimized, TargetNullValue=(none)}" />
+                            </TextBlock>
+                            <TextBlock Foreground="#334155">
+                                <Run Text="Visible: " />
+                                <Run Text="{Binding LastDetectedWindow.IsVisible, TargetNullValue=(none)}" />
+                            </TextBlock>
+                            <TextBlock Foreground="#334155">
+                                <Run Text="SessionPad window: " />
+                                <Run Text="{Binding LastDetectedWindow.IsSessionPadWindow, TargetNullValue=(none)}" />
+                            </TextBlock>
+                            <TextBlock Foreground="#334155">
+                                <Run Text="Class: " />
+                                <Run Text="{Binding LastDetectedWindow.WindowClass, TargetNullValue=(none)}" />
+                            </TextBlock>
+                            <TextBlock Foreground="#B45309"
+                                       TextWrapping="Wrap">
+                                <Run Text="Status: " />
+                                <Run Text="{Binding LastDetectedWindow.Error, TargetNullValue=Ready}" />
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="10"
+                            Margin="0,0,0,8"
+                            Background="White"
+                            BorderBrush="#E2E8F0"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <StackPanel>
                             <TextBlock Text="Pinned"
                                        FontWeight="SemiBold"
                                        Foreground="#111827" />
