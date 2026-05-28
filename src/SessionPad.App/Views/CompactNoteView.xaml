@@ -87,6 +87,13 @@
                             <TextBlock Foreground="#B45309"
                                        TextWrapping="Wrap"
                                        Text="{Binding CurrentSessionStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Session status: Ready, StringFormat={}Session status: {0}}" />
+                            <TextBox Margin="0,8,0,0"
+                                     Text="{Binding NewSessionName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button Margin="0,6,0,0"
+                                    Content="Rename Session"
+                                    Command="{Binding RenameSessionCommand}"
+                                    Padding="8,4"
+                                    HorizontalAlignment="Left" />
                         </StackPanel>
                     </Border>
 

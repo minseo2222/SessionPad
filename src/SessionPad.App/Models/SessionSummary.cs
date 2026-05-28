@@ -6,6 +6,8 @@ public sealed record SessionSummary
 
     public string DisplayName { get; init; } = string.Empty;
 
+    public bool IsUserNamed { get; init; }
+
     public WindowIdentity Identity { get; init; } = new();
 
     public string NoteFile { get; init; } = string.Empty;

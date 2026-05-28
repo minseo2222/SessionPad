@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Windows.Input;
 using SessionPad.App.Models;
 using SessionPad.App.Services;
@@ -38,6 +39,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string _lastCommandCopyStatus = "Ready";
     private string _lastDragAttachStatus = "Drag near a window to attach.";
     private bool _startOnLogin;
+    private string _newSessionName = string.Empty;
     private string _newPinnedText = string.Empty;
     private string _newTodoText = string.Empty;
     private string _newCommandText = string.Empty;
@@ -66,6 +68,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 
         ExpandCommand = new RelayCommand(() => PanelState = NotePanelState.CompactNote);
         CollapseCommand = new RelayCommand(() => PanelState = NotePanelState.DockedTab);
+        RenameSessionCommand = new RelayCommand(RenameSession);
         OpenLocalDataFolderCommand = new RelayCommand(OpenLocalDataFolder);
         DeleteLocalDataCommand = new RelayCommand(() => DeleteLocalDataRequested?.Invoke(this, EventArgs.Empty));
 
@@ -90,6 +93,8 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public ICommand ExpandCommand { get; }
 
     public ICommand CollapseCommand { get; }
+
+    public ICommand RenameSessionCommand { get; }
 
     public ICommand OpenLocalDataFolderCommand { get; }
 
@@ -184,6 +189,12 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     {
         get => _currentSessionMatchKey;
         private set => SetField(ref _currentSessionMatchKey, value);
+    }
+
+    public string NewSessionName
+    {
+        get => _newSessionName;
+        set => SetField(ref _newSessionName, value);
     }
 
     public string LocalDataPath => _localDataService.GetAppDataDirectory();
@@ -422,6 +433,58 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         {
             Debug.WriteLine($"SessionPad could not open local data folder: {ex.Message}");
             LocalDataStatus = $"Open folder failed: {ex.Message}";
+        }
+    }
+
+    private void RenameSession()
+    {
+        if (_currentSession is null)
+        {
+            CurrentSessionStatus = "Default note cannot be renamed.";
+            return;
+        }
+
+        var name = (NewSessionName ?? string.Empty).Trim();
+        if (name.Length == 0)
+        {
+            CurrentSessionStatus = "Enter a session name.";
+            return;
+        }
+
+        try
+        {
+            var index = _storageService.LoadSessionIndex();
+            var sessionIndex = index.Sessions.FindIndex(session =>
+                string.Equals(session.SessionId, _currentSession.SessionId, StringComparison.Ordinal));
+            if (sessionIndex < 0)
+            {
+                CurrentSessionStatus = "Rename failed: session was not found.";
+                return;
+            }
+
+            var updatedSession = index.Sessions[sessionIndex] with
+            {
+                DisplayName = name,
+                IsUserNamed = true
+            };
+            index.Sessions[sessionIndex] = updatedSession;
+            _storageService.SaveSessionIndex(index);
+
+            _currentSession = _currentSession with
+            {
+                DisplayName = name,
+                IsUserNamed = true
+            };
+            CurrentSessionDisplayName = name;
+            CurrentSessionStatus = "Renamed";
+            NewSessionName = string.Empty;
+        }
+        catch (Exception ex) when (ex is IOException
+            or UnauthorizedAccessException
+            or JsonException
+            or NotSupportedException)
+        {
+            CurrentSessionStatus = $"Rename failed: {ex.Message}";
         }
     }
 

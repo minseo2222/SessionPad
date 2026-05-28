@@ -54,7 +54,8 @@ public sealed class SessionMatcher
             var updatedSession = session with
             {
                 SessionId = existingSessionId,
-                DisplayName = CreateDisplayName(identity),
+                DisplayName = session.IsUserNamed ? session.DisplayName : CreateDisplayName(identity),
+                IsUserNamed = session.IsUserNamed,
                 Identity = identity,
                 NoteFile = string.IsNullOrWhiteSpace(session.NoteFile)
                     ? $"notes/{existingSessionId}.json"
