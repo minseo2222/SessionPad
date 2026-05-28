@@ -28,8 +28,9 @@
             </views:DockedTabView.Style>
         </views:DockedTabView>
 
-        <views:CompactNoteView HorizontalAlignment="Center"
-                               VerticalAlignment="Center">
+        <views:CompactNoteView HorizontalAlignment="Stretch"
+                               VerticalAlignment="Stretch"
+                               Margin="8">
             <views:CompactNoteView.Style>
                 <Style TargetType="{x:Type views:CompactNoteView}">
                     <Setter Property="Visibility" Value="Collapsed" />
