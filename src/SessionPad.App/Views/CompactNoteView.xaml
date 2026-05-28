@@ -281,6 +281,10 @@
                                          MinHeight="28"
                                          VerticalContentAlignment="Center" />
                             </DockPanel>
+                            <TextBlock Margin="0,8,0,0"
+                                       Foreground="#B45309"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding LastCommandCopyStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Copy status: Ready, StringFormat={}Copy status: {0}}" />
                             <ItemsControl ItemsSource="{Binding CommandItems}"
                                           Margin="0,8,0,0">
                                 <ItemsControl.ItemTemplate>
@@ -288,6 +292,7 @@
                                         <Grid Margin="0,0,0,6">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="{Binding Text}"
@@ -298,6 +303,12 @@
                                                        Padding="6"
                                                        VerticalAlignment="Center" />
                                             <Button Grid.Column="1"
+                                                    Command="{Binding DataContext.CopyCommandItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="Copy"
+                                                    Margin="8,0,0,0"
+                                                    Padding="6,2" />
+                                            <Button Grid.Column="2"
                                                     Command="{Binding DataContext.DeleteCommandItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"
                                                     Content="Delete"

@@ -14,6 +14,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 {
     private readonly NoteStorageService _storageService;
     private readonly LocalDataService _localDataService;
+    private readonly ClipboardService _clipboardService;
     private SessionSummary? _currentSession;
     private DateTimeOffset _createdAt = DateTimeOffset.UtcNow;
     private NotePanelState _panelState = NotePanelState.CompactNote;
@@ -32,20 +33,30 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string? _attachmentError;
     private string? _lastFollowUpdateText;
     private string _localDataStatus = "Local data ready";
+    private string _lastCommandCopyStatus = "Ready";
     private string _newPinnedText = string.Empty;
     private string _newTodoText = string.Empty;
     private string _newCommandText = string.Empty;
     private string _newNoteText = string.Empty;
 
     public FloatingNoteViewModel()
-        : this(new NoteStorageService(), new LocalDataService())
+        : this(new NoteStorageService(), new LocalDataService(), new ClipboardService())
     {
     }
 
     public FloatingNoteViewModel(NoteStorageService storageService, LocalDataService localDataService)
+        : this(storageService, localDataService, new ClipboardService())
+    {
+    }
+
+    public FloatingNoteViewModel(
+        NoteStorageService storageService,
+        LocalDataService localDataService,
+        ClipboardService clipboardService)
     {
         _storageService = storageService;
         _localDataService = localDataService;
+        _clipboardService = clipboardService;
 
         ExpandCommand = new RelayCommand(() => PanelState = NotePanelState.CompactNote);
         CollapseCommand = new RelayCommand(() => PanelState = NotePanelState.DockedTab);
@@ -58,6 +69,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         DeleteTodoCommand = new RelayCommand(DeleteTodo);
         AddCommandItemCommand = new RelayCommand(AddCommandItem);
         DeleteCommandItemCommand = new RelayCommand(DeleteCommandItem);
+        CopyCommandItemCommand = new RelayCommand(CopyCommandItem);
         AddNoteCommand = new RelayCommand(AddNote);
         DeleteNoteCommand = new RelayCommand(DeleteNote);
 
@@ -88,6 +100,8 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public ICommand AddCommandItemCommand { get; }
 
     public ICommand DeleteCommandItemCommand { get; }
+
+    public ICommand CopyCommandItemCommand { get; }
 
     public ICommand AddNoteCommand { get; }
 
@@ -172,6 +186,12 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     {
         get => _localDataStatus;
         private set => SetField(ref _localDataStatus, value);
+    }
+
+    public string LastCommandCopyStatus
+    {
+        get => _lastCommandCopyStatus;
+        private set => SetField(ref _lastCommandCopyStatus, value);
     }
 
     public DetectedWindowInfo? LastDetectedWindow
@@ -268,6 +288,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         _currentSession = session;
         ApplyWindowSessionContext(session, matchKey, "Window session loaded");
         ClearNewItemInputs();
+        LastCommandCopyStatus = "Ready";
 
         var savedNote = _storageService.LoadSessionNote(session);
         if (savedNote is null)
@@ -301,6 +322,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         ClearNewItemInputs();
         LoadDefaultItems();
         LocalDataStatus = "Local data deleted. Future edits will recreate local JSON files.";
+        LastCommandCopyStatus = "Ready";
     }
 
     private void LoadDefaultNote()
@@ -437,6 +459,18 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         {
             SaveNote();
         }
+    }
+
+    private void CopyCommandItem(object? item)
+    {
+        if (item is not CommandItemViewModel commandItem)
+        {
+            LastCommandCopyStatus = "No command selected.";
+            return;
+        }
+
+        var result = _clipboardService.CopyText(commandItem.Text);
+        LastCommandCopyStatus = result.Message;
     }
 
     private void AddNote()
