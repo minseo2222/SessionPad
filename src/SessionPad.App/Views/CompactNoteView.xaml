@@ -43,53 +43,34 @@
                             BorderThickness="1"
                             CornerRadius="4">
                         <StackPanel>
+                            <!-- DetectedWindowInfo is read-only debug state. Use TextBlock or Mode=OneWay bindings only. -->
                             <TextBlock Text="Detected Window"
                                        FontWeight="SemiBold"
                                        Foreground="#111827" />
                             <TextBlock Margin="0,6,0,0"
-                                       Foreground="#334155">
-                                <Run Text="Process: " />
-                                <Run Text="{Binding LastDetectedWindow.ProcessName, TargetNullValue=(none)}" />
-                            </TextBlock>
+                                       Foreground="#334155"
+                                       Text="{Binding LastDetectedWindow.ProcessName, Mode=OneWay, TargetNullValue=(none), FallbackValue=Process: (none), StringFormat={}Process: {0}}" />
                             <TextBlock Foreground="#334155"
-                                       TextWrapping="Wrap">
-                                <Run Text="Title: " />
-                                <Run Text="{Binding LastDetectedWindow.Title, TargetNullValue=(none)}" />
-                            </TextBlock>
-                            <TextBlock Foreground="#334155">
-                                <Run Text="HWND: " />
-                                <Run Text="{Binding LastDetectedWindow.HwndHex, TargetNullValue=(none)}" />
-                            </TextBlock>
-                            <TextBlock Foreground="#334155">
-                                <Run Text="Process ID: " />
-                                <Run Text="{Binding LastDetectedWindow.ProcessId, TargetNullValue=(none)}" />
-                            </TextBlock>
+                                       TextWrapping="Wrap"
+                                       Text="{Binding LastDetectedWindow.Title, Mode=OneWay, TargetNullValue=(none), FallbackValue=Title: (none), StringFormat={}Title: {0}}" />
                             <TextBlock Foreground="#334155"
-                                       TextWrapping="Wrap">
-                                <Run Text="Bounds: " />
-                                <Run Text="{Binding LastDetectedWindow.BoundsText, TargetNullValue=(none)}" />
-                            </TextBlock>
-                            <TextBlock Foreground="#334155">
-                                <Run Text="Minimized: " />
-                                <Run Text="{Binding LastDetectedWindow.IsMinimized, TargetNullValue=(none)}" />
-                            </TextBlock>
-                            <TextBlock Foreground="#334155">
-                                <Run Text="Visible: " />
-                                <Run Text="{Binding LastDetectedWindow.IsVisible, TargetNullValue=(none)}" />
-                            </TextBlock>
-                            <TextBlock Foreground="#334155">
-                                <Run Text="SessionPad window: " />
-                                <Run Text="{Binding LastDetectedWindow.IsSessionPadWindow, TargetNullValue=(none)}" />
-                            </TextBlock>
-                            <TextBlock Foreground="#334155">
-                                <Run Text="Class: " />
-                                <Run Text="{Binding LastDetectedWindow.WindowClass, TargetNullValue=(none)}" />
-                            </TextBlock>
+                                       Text="{Binding LastDetectedWindow.HwndHex, Mode=OneWay, TargetNullValue=(none), FallbackValue=HWND: (none), StringFormat={}HWND: {0}}" />
+                            <TextBlock Foreground="#334155"
+                                       Text="{Binding LastDetectedWindow.ProcessId, Mode=OneWay, TargetNullValue=(none), FallbackValue=Process ID: (none), StringFormat={}Process ID: {0}}" />
+                            <TextBlock Foreground="#334155"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding LastDetectedWindow.BoundsText, Mode=OneWay, TargetNullValue=(none), FallbackValue=Bounds: (none), StringFormat={}Bounds: {0}}" />
+                            <TextBlock Foreground="#334155"
+                                       Text="{Binding LastDetectedWindow.IsMinimized, Mode=OneWay, TargetNullValue=(none), FallbackValue=Minimized: (none), StringFormat={}Minimized: {0}}" />
+                            <TextBlock Foreground="#334155"
+                                       Text="{Binding LastDetectedWindow.IsVisible, Mode=OneWay, TargetNullValue=(none), FallbackValue=Visible: (none), StringFormat={}Visible: {0}}" />
+                            <TextBlock Foreground="#334155"
+                                       Text="{Binding LastDetectedWindow.IsSessionPadWindow, Mode=OneWay, TargetNullValue=(none), FallbackValue=SessionPad window: (none), StringFormat={}SessionPad window: {0}}" />
+                            <TextBlock Foreground="#334155"
+                                       Text="{Binding LastDetectedWindow.WindowClass, Mode=OneWay, TargetNullValue=(none), FallbackValue=Class: (none), StringFormat={}Class: {0}}" />
                             <TextBlock Foreground="#B45309"
-                                       TextWrapping="Wrap">
-                                <Run Text="Status: " />
-                                <Run Text="{Binding LastDetectedWindow.Error, TargetNullValue=Ready}" />
-                            </TextBlock>
+                                       TextWrapping="Wrap"
+                                       Text="{Binding LastDetectedWindow.Error, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Status: Ready, StringFormat={}Status: {0}}" />
                         </StackPanel>
                     </Border>
 
