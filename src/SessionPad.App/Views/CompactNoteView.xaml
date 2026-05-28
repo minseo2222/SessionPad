@@ -19,19 +19,39 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <DockPanel Margin="0,0,0,12">
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
                 <TextBlock Text="SessionPad"
                            FontSize="16"
                            FontWeight="SemiBold"
                            Foreground="#111827"
                            VerticalAlignment="Center" />
-                <Button DockPanel.Dock="Right"
+                <Border Grid.Column="1"
+                        Margin="8,0,8,0"
+                        Padding="8,4"
+                        Background="#E2E8F0"
+                        BorderBrush="#CBD5E1"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Cursor="SizeAll"
+                        ToolTip="Drag near a window to attach"
+                        MouseLeftButtonDown="OnDragAttachMouseLeftButtonDown">
+                    <TextBlock Text="Drag"
+                               FontSize="12"
+                               Foreground="#334155"
+                               VerticalAlignment="Center" />
+                </Border>
+                <Button Grid.Column="2"
                         Command="{Binding CollapseCommand}"
                         Content="Collapse"
                         MinWidth="72"
                         Padding="8,4"
                         HorizontalAlignment="Right" />
-            </DockPanel>
+            </Grid>
 
             <ScrollViewer Grid.Row="1"
                           VerticalScrollBarVisibility="Auto">
@@ -146,6 +166,9 @@
                             <TextBlock Margin="0,8,0,0"
                                        Foreground="#334155"
                                        Text="{Binding IsAttachedToWindow, Mode=OneWay, FallbackValue=Attached: False, StringFormat={}Attached: {0}}" />
+                            <TextBlock Foreground="#334155"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding LastDragAttachStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Drag attach: Ready, StringFormat={}Drag attach: {0}}" />
                             <TextBlock Foreground="#334155"
                                        Text="{Binding AttachmentSide, Mode=OneWay, TargetNullValue=(none), FallbackValue=Attach side: (none), StringFormat={}Attach side: {0}}" />
                             <TextBlock Foreground="#334155"

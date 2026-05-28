@@ -18,6 +18,24 @@ public sealed class WindowDetectionService
                 return DetectedWindowInfo.FromError("No foreground window was available.", hwnd);
             }
 
+            return GetWindowInfo(hwnd, sessionPadHwnd);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+            return DetectedWindowInfo.FromException(ex);
+        }
+    }
+
+    public DetectedWindowInfo GetWindowInfo(IntPtr hwnd, IntPtr sessionPadHwnd)
+    {
+        try
+        {
+            if (hwnd == IntPtr.Zero)
+            {
+                return DetectedWindowInfo.FromError("No window handle was available.", hwnd);
+            }
+
             var processId = GetProcessId(hwnd, out var processError);
             var processName = GetProcessName(processId, out var processNameError);
             var bounds = GetBounds(hwnd, out var boundsError);
@@ -50,8 +68,161 @@ public sealed class WindowDetectionService
         catch (Exception ex)
         {
             Debug.WriteLine(ex);
-            return DetectedWindowInfo.FromException(ex);
+            return DetectedWindowInfo.FromException(ex, hwnd);
         }
+    }
+
+    public DetectedWindowInfo? FindNearestAttachTarget(
+        IntPtr sessionPadHwnd,
+        int thresholdPx,
+        out string status)
+    {
+        status = "No nearby target window.";
+
+        if (sessionPadHwnd == IntPtr.Zero)
+        {
+            status = "SessionPad window handle is not available.";
+            return null;
+        }
+
+        if (!User32.GetWindowRect(sessionPadHwnd, out var sessionPadBounds))
+        {
+            status = $"Could not read SessionPad bounds. Win32 error: {Marshal.GetLastWin32Error()}";
+            return null;
+        }
+
+        var effectiveThreshold = Math.Max(0, thresholdPx);
+        DetectedWindowInfo? nearestTarget = null;
+        var nearestDistance = double.MaxValue;
+
+        try
+        {
+            var enumerated = User32.EnumWindows((hwnd, _) =>
+            {
+                try
+                {
+                    if (!IsAttachCandidate(hwnd, sessionPadHwnd, out var candidateBounds))
+                    {
+                        return true;
+                    }
+
+                    var distance = CalculateRectangleDistance(sessionPadBounds, candidateBounds);
+                    if (distance > effectiveThreshold || distance >= nearestDistance)
+                    {
+                        return true;
+                    }
+
+                    var windowInfo = GetWindowInfo(hwnd, sessionPadHwnd);
+                    if (!IsUsableExternalTarget(windowInfo))
+                    {
+                        return true;
+                    }
+
+                    nearestTarget = windowInfo;
+                    nearestDistance = distance;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"SessionPad skipped a drag attach candidate: {ex}");
+                }
+
+                return true;
+            }, IntPtr.Zero);
+
+            if (!enumerated)
+            {
+                status = $"Could not enumerate windows. Win32 error: {Marshal.GetLastWin32Error()}";
+                return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+            status = $"Nearest window search failed: {ex.GetType().Name}: {ex.Message}";
+            return null;
+        }
+
+        if (nearestTarget is null)
+        {
+            status = $"No nearby target window within {effectiveThreshold}px.";
+            return null;
+        }
+
+        status = $"Nearby target selected at {Math.Round(nearestDistance)}px.";
+        return nearestTarget;
+    }
+
+    private static bool IsAttachCandidate(IntPtr hwnd, IntPtr sessionPadHwnd, out NativeRect bounds)
+    {
+        bounds = default;
+
+        if (hwnd == IntPtr.Zero || hwnd == sessionPadHwnd)
+        {
+            return false;
+        }
+
+        if (IsCurrentProcessWindow(hwnd))
+        {
+            return false;
+        }
+
+        if (!User32.IsWindow(hwnd) || !User32.IsWindowVisible(hwnd) || User32.IsIconic(hwnd))
+        {
+            return false;
+        }
+
+        if (!User32.GetWindowRect(hwnd, out bounds))
+        {
+            return false;
+        }
+
+        return bounds.Right > bounds.Left && bounds.Bottom > bounds.Top;
+    }
+
+    private static bool IsUsableExternalTarget(DetectedWindowInfo window)
+    {
+        return window.Hwnd != IntPtr.Zero
+            && !window.IsCurrentProcessWindow
+            && window.IsVisible
+            && !window.IsMinimized
+            && window.Width > 0
+            && window.Height > 0;
+    }
+
+    private static bool IsCurrentProcessWindow(IntPtr hwnd)
+    {
+        if (hwnd == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        var processId = GetProcessId(hwnd, out _);
+        return processId == Environment.ProcessId;
+    }
+
+    private static double CalculateRectangleDistance(NativeRect first, NativeRect second)
+    {
+        var horizontalGap = 0;
+        if (first.Right < second.Left)
+        {
+            horizontalGap = second.Left - first.Right;
+        }
+        else if (second.Right < first.Left)
+        {
+            horizontalGap = first.Left - second.Right;
+        }
+
+        var verticalGap = 0;
+        if (first.Bottom < second.Top)
+        {
+            verticalGap = second.Top - first.Bottom;
+        }
+        else if (second.Bottom < first.Top)
+        {
+            verticalGap = first.Top - second.Bottom;
+        }
+
+        return Math.Sqrt(((double)horizontalGap * horizontalGap) + ((double)verticalGap * verticalGap));
     }
 
     private static int GetProcessId(IntPtr hwnd, out string? error)

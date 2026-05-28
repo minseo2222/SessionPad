@@ -5,6 +5,8 @@ namespace SessionPad.App.Native;
 
 internal static partial class User32
 {
+    public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
     public const int WmHotkey = 0x0312;
 
     public const uint ModAlt = 0x0001;
@@ -31,6 +33,10 @@ internal static partial class User32
 
     [DllImport("user32.dll")]
     public static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern int GetWindowTextLengthW(IntPtr hWnd);

@@ -12,6 +12,7 @@ namespace SessionPad.App;
 public partial class MainWindow : Window
 {
     private static readonly TimeSpan AttachmentPollInterval = TimeSpan.FromMilliseconds(150);
+    private const int DragAttachThresholdPx = 48;
 
     private readonly HotkeyService _hotkeyService = new();
     private readonly WindowDetectionService _windowDetectionService = new();
@@ -75,6 +76,37 @@ public partial class MainWindow : Window
         base.OnClosed(e);
     }
 
+    public void BeginDragAttach()
+    {
+        _viewModel.SetDragAttachStatus("Drag attach started.");
+
+        if (_attachmentTimer.IsEnabled)
+        {
+            _attachmentTimer.Stop();
+        }
+
+        try
+        {
+            DragMove();
+        }
+        catch (InvalidOperationException ex)
+        {
+            Debug.WriteLine($"SessionPad drag attach could not start: {ex.Message}");
+            _viewModel.SetDragAttachStatus($"Drag attach could not start: {ex.Message}");
+            ResumeAttachmentTimerIfAttached();
+            return;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"SessionPad drag attach failed: {ex}");
+            _viewModel.SetDragAttachStatus($"Drag attach failed: {ex.GetType().Name}: {ex.Message}");
+            ResumeAttachmentTimerIfAttached();
+            return;
+        }
+
+        TryAttachToNearestWindowAfterDrag();
+    }
+
     private IntPtr OnWindowMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
         if (message == User32.WmHotkey && wParam.ToInt64() == HotkeyService.ShowSessionPadHotkeyId)
@@ -102,13 +134,65 @@ public partial class MainWindow : Window
             _viewModel.SetLastDetectedWindow(detectedWindow);
         }
 
+        AttachToDetectedWindow(detectedWindow, activateAfterAttach: true, dragStatusOnSuccess: null);
+    }
+
+    private void TryAttachToNearestWindowAfterDrag()
+    {
+        DetectedWindowInfo? detectedWindow;
+        string status;
+
+        try
+        {
+            detectedWindow = _windowDetectionService.FindNearestAttachTarget(
+                _windowHandle,
+                DragAttachThresholdPx,
+                out status);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+            status = $"Drag attach search failed: {ex.GetType().Name}: {ex.Message}";
+            detectedWindow = null;
+        }
+
+        if (detectedWindow is null)
+        {
+            var detachResult = _windowAttachmentService.Detach(status);
+            _viewModel.SetAttachmentResult(detachResult);
+            _viewModel.SetDragAttachStatus(status);
+            UpdateAttachmentTimer(detachResult);
+            return;
+        }
+
+        _viewModel.SetLastDetectedWindow(detectedWindow);
+        AttachToDetectedWindow(
+            detectedWindow,
+            activateAfterAttach: true,
+            dragStatusOnSuccess: $"Attached by drag to {CreateTargetLabel(detectedWindow)}.");
+    }
+
+    private void AttachToDetectedWindow(
+        DetectedWindowInfo detectedWindow,
+        bool activateAfterAttach,
+        string? dragStatusOnSuccess)
+    {
         if (detectedWindow.IsCurrentProcessWindow)
         {
             var selfAttachmentResult = _windowAttachmentService.IgnoreSessionPadWindow();
             _viewModel.SetAttachmentResult(selfAttachmentResult);
+            if (dragStatusOnSuccess is not null)
+            {
+                _viewModel.SetDragAttachStatus("Ignored SessionPad window during drag attach.");
+            }
+
             UpdateAttachmentTimer(selfAttachmentResult);
             ShowAndRestoreSafely();
-            ActivateSafely();
+            if (activateAfterAttach)
+            {
+                ActivateSafely();
+            }
+
             return;
         }
 
@@ -124,9 +208,16 @@ public partial class MainWindow : Window
         ShowAndRestoreSafely();
         var attachmentResult = _windowAttachmentService.TryAttachToWindow(_windowHandle, detectedWindow);
         _viewModel.SetAttachmentResult(attachmentResult);
+        if (dragStatusOnSuccess is not null)
+        {
+            _viewModel.SetDragAttachStatus(attachmentResult.IsAttached
+                ? dragStatusOnSuccess
+                : attachmentResult.Error ?? attachmentResult.Status);
+        }
+
         UpdateAttachmentTimer(attachmentResult);
         ApplyAttachmentVisibility(attachmentResult);
-        if (!attachmentResult.IsHiddenBecauseTargetMinimized)
+        if (activateAfterAttach && !attachmentResult.IsHiddenBecauseTargetMinimized)
         {
             ActivateSafely();
         }
@@ -192,6 +283,14 @@ public partial class MainWindow : Window
         if (_attachmentTimer.IsEnabled)
         {
             _attachmentTimer.Stop();
+        }
+    }
+
+    private void ResumeAttachmentTimerIfAttached()
+    {
+        if (_windowAttachmentService.HasAttachedTarget && !_attachmentTimer.IsEnabled)
+        {
+            _attachmentTimer.Start();
         }
     }
 
@@ -292,6 +391,18 @@ public partial class MainWindow : Window
         }
 
         _viewModel.SetLocalDataStatus($"Delete failed: {error ?? "Unknown error"}");
+    }
+
+    private static string CreateTargetLabel(DetectedWindowInfo detectedWindow)
+    {
+        if (!string.IsNullOrWhiteSpace(detectedWindow.Title))
+        {
+            return detectedWindow.Title;
+        }
+
+        return string.IsNullOrWhiteSpace(detectedWindow.ProcessName)
+            ? "target window"
+            : detectedWindow.ProcessName;
     }
 
 }

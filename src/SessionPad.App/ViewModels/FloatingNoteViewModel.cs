@@ -34,6 +34,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string? _lastFollowUpdateText;
     private string _localDataStatus = "Local data ready";
     private string _lastCommandCopyStatus = "Ready";
+    private string _lastDragAttachStatus = "Drag near a window to attach.";
     private string _newPinnedText = string.Empty;
     private string _newTodoText = string.Empty;
     private string _newCommandText = string.Empty;
@@ -194,6 +195,12 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         private set => SetField(ref _lastCommandCopyStatus, value);
     }
 
+    public string LastDragAttachStatus
+    {
+        get => _lastDragAttachStatus;
+        private set => SetField(ref _lastDragAttachStatus, value);
+    }
+
     public DetectedWindowInfo? LastDetectedWindow
     {
         get => _lastDetectedWindow;
@@ -315,6 +322,11 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         LocalDataStatus = status;
     }
 
+    public void SetDragAttachStatus(string status)
+    {
+        LastDragAttachStatus = status;
+    }
+
     public void ResetAfterLocalDataDeleted()
     {
         _currentSession = null;
@@ -323,6 +335,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         LoadDefaultItems();
         LocalDataStatus = "Local data deleted. Future edits will recreate local JSON files.";
         LastCommandCopyStatus = "Ready";
+        LastDragAttachStatus = "Drag near a window to attach.";
     }
 
     private void LoadDefaultNote()
