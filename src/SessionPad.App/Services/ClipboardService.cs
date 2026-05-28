@@ -29,7 +29,7 @@ public sealed class ClipboardService
 
         try
         {
-            Clipboard.SetText(trimmedText);
+            System.Windows.Clipboard.SetText(trimmedText);
             return ClipboardCopyResult.Success();
         }
         catch (Exception ex) when (ex is ExternalException or InvalidOperationException or ThreadStateException)

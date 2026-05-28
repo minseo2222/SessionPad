@@ -4,7 +4,7 @@ using System.Windows.Input;
 
 namespace SessionPad.App.Views;
 
-public partial class CompactNoteView : UserControl
+public partial class CompactNoteView : System.Windows.Controls.UserControl
 {
     public CompactNoteView()
     {

@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Threading;
@@ -6,6 +8,8 @@ using SessionPad.App.Models;
 using SessionPad.App.Native;
 using SessionPad.App.Services;
 using SessionPad.App.ViewModels;
+using Drawing = System.Drawing;
+using Forms = System.Windows.Forms;
 
 namespace SessionPad.App;
 
@@ -22,9 +26,13 @@ public partial class MainWindow : Window
     private readonly SessionMatcher _sessionMatcher;
     private readonly FloatingNoteViewModel _viewModel;
     private readonly DispatcherTimer _attachmentTimer = new();
+    private Forms.NotifyIcon? _notifyIcon;
+    private Forms.ContextMenuStrip? _trayMenu;
+    private Drawing.Icon? _trayIcon;
     private HwndSource? _source;
     private IntPtr _windowHandle;
     private bool _hotkeyRegistered;
+    private bool _exitRequested;
 
     public MainWindow()
     {
@@ -39,6 +47,8 @@ public partial class MainWindow : Window
 
         _attachmentTimer.Interval = AttachmentPollInterval;
         _attachmentTimer.Tick += OnAttachmentTimerTick;
+
+        InitializeTrayIcon();
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -57,6 +67,18 @@ public partial class MainWindow : Window
         }
     }
 
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        if (!_exitRequested)
+        {
+            e.Cancel = true;
+            HideSafely();
+            return;
+        }
+
+        base.OnClosing(e);
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         _viewModel.DeleteLocalDataRequested -= OnDeleteLocalDataRequested;
@@ -73,7 +95,15 @@ public partial class MainWindow : Window
         _source?.RemoveHook(OnWindowMessage);
         _source = null;
 
+        DisposeTrayIcon();
+
         base.OnClosed(e);
+    }
+
+    public void ShowAndActivateFromExternalRequest()
+    {
+        ShowAndRestoreSafely();
+        ActivateSafely();
     }
 
     public void BeginDragAttach()
@@ -116,6 +146,108 @@ public partial class MainWindow : Window
         }
 
         return IntPtr.Zero;
+    }
+
+    private void InitializeTrayIcon()
+    {
+        try
+        {
+            _trayIcon = LoadTrayIcon();
+            _trayMenu = new Forms.ContextMenuStrip();
+            _trayMenu.Items.Add("Open", null, (_, _) => BeginInvokeOnDispatcher(ShowAndActivateFromTray));
+            _trayMenu.Items.Add("Open data folder", null, (_, _) => BeginInvokeOnDispatcher(OpenLocalDataFolderFromTray));
+            _trayMenu.Items.Add(new Forms.ToolStripSeparator());
+            _trayMenu.Items.Add("Exit", null, (_, _) => BeginInvokeOnDispatcher(ExitFromTray));
+
+            _notifyIcon = new Forms.NotifyIcon
+            {
+                ContextMenuStrip = _trayMenu,
+                Icon = _trayIcon,
+                Text = "SessionPad",
+                Visible = true
+            };
+            _notifyIcon.DoubleClick += OnTrayIconDoubleClick;
+        }
+        catch (Exception ex) when (ex is IOException
+            or UnauthorizedAccessException
+            or ArgumentException
+            or InvalidOperationException)
+        {
+            Debug.WriteLine($"SessionPad could not initialize tray icon: {ex}");
+        }
+    }
+
+    private void OnTrayIconDoubleClick(object? sender, EventArgs e)
+    {
+        BeginInvokeOnDispatcher(ShowAndActivateFromTray);
+    }
+
+    private void ShowAndActivateFromTray()
+    {
+        ShowAndActivateFromExternalRequest();
+    }
+
+    private void OpenLocalDataFolderFromTray()
+    {
+        try
+        {
+            _localDataService.OpenAppDataDirectory();
+            _viewModel.SetLocalDataStatus($"Opened {_localDataService.GetAppDataDirectory()}");
+        }
+        catch (Exception ex) when (ex is IOException
+            or UnauthorizedAccessException
+            or InvalidOperationException
+            or System.ComponentModel.Win32Exception)
+        {
+            Debug.WriteLine($"SessionPad could not open local data folder from tray: {ex}");
+            _viewModel.SetLocalDataStatus($"Open folder failed: {ex.Message}");
+        }
+    }
+
+    private void ExitFromTray()
+    {
+        _exitRequested = true;
+        Close();
+    }
+
+    private void BeginInvokeOnDispatcher(Action action)
+    {
+        try
+        {
+            Dispatcher.BeginInvoke(action);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException)
+        {
+            Debug.WriteLine($"SessionPad could not dispatch tray action: {ex.Message}");
+        }
+    }
+
+    private static Drawing.Icon LoadTrayIcon()
+    {
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "SessionPad.ico");
+        if (File.Exists(iconPath))
+        {
+            return new Drawing.Icon(iconPath);
+        }
+
+        return (Drawing.Icon)Drawing.SystemIcons.Application.Clone();
+    }
+
+    private void DisposeTrayIcon()
+    {
+        if (_notifyIcon is not null)
+        {
+            _notifyIcon.DoubleClick -= OnTrayIconDoubleClick;
+            _notifyIcon.Visible = false;
+            _notifyIcon.Dispose();
+            _notifyIcon = null;
+        }
+
+        _trayMenu?.Dispose();
+        _trayMenu = null;
+
+        _trayIcon?.Dispose();
+        _trayIcon = null;
     }
 
     private void OnHotkeyPressed()
@@ -365,7 +497,7 @@ public partial class MainWindow : Window
 
     private void OnDeleteLocalDataRequested(object? sender, EventArgs e)
     {
-        var result = MessageBox.Show(
+        var result = System.Windows.MessageBox.Show(
             this,
             "Delete all local SessionPad data? This removes saved notes and sessions from this device. This cannot be undone.",
             "Delete Local Data",
