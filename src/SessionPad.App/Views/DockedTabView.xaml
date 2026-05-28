@@ -25,7 +25,7 @@
                            FontWeight="SemiBold"
                            Foreground="#F5F7FA"
                            HorizontalAlignment="Center" />
-                <TextBlock Text="{Binding TodoCount}"
+                <TextBlock Text="{Binding OpenTodoCount}"
                            Margin="0,8,0,0"
                            FontSize="16"
                            FontWeight="SemiBold"

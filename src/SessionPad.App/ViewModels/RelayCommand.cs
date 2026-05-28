@@ -4,10 +4,15 @@ namespace SessionPad.App.ViewModels;
 
 public sealed class RelayCommand : ICommand
 {
-    private readonly Action _execute;
-    private readonly Func<bool>? _canExecute;
+    private readonly Action<object?> _execute;
+    private readonly Predicate<object?>? _canExecute;
 
     public RelayCommand(Action execute, Func<bool>? canExecute = null)
+        : this(_ => execute(), canExecute is null ? null : _ => canExecute())
+    {
+    }
+
+    public RelayCommand(Action<object?> execute, Predicate<object?>? canExecute = null)
     {
         _execute = execute;
         _canExecute = canExecute;
@@ -17,12 +22,12 @@ public sealed class RelayCommand : ICommand
 
     public bool CanExecute(object? parameter)
     {
-        return _canExecute?.Invoke() ?? true;
+        return _canExecute?.Invoke(parameter) ?? true;
     }
 
     public void Execute(object? parameter)
     {
-        _execute();
+        _execute(parameter);
     }
 
     public void RaiseCanExecuteChanged()

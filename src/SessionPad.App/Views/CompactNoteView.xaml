@@ -4,9 +4,10 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
-             d:DesignHeight="420"
-             d:DesignWidth="300">
-    <Border Width="300"
+             d:DesignHeight="520"
+             d:DesignWidth="340">
+    <Border Width="340"
+            MaxHeight="520"
             Padding="14"
             Background="#F8FAFC"
             BorderBrush="#CBD5E1"
@@ -15,7 +16,7 @@
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
             <DockPanel Margin="0,0,0,12">
@@ -32,83 +33,206 @@
                         HorizontalAlignment="Right" />
             </DockPanel>
 
-            <StackPanel Grid.Row="1">
-                <Border Padding="10"
-                        Margin="0,0,0,8"
-                        Background="White"
-                        BorderBrush="#E2E8F0"
-                        BorderThickness="1"
-                        CornerRadius="4">
-                    <StackPanel>
-                        <TextBlock Text="Pinned"
-                                   FontWeight="SemiBold"
-                                   Foreground="#111827" />
-                        <TextBlock Text="{Binding PinnedText}"
-                                   Margin="0,6,0,0"
-                                   TextWrapping="Wrap"
-                                   Foreground="#334155" />
-                    </StackPanel>
-                </Border>
+            <ScrollViewer Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <Border Padding="10"
+                            Margin="0,0,0,8"
+                            Background="White"
+                            BorderBrush="#E2E8F0"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <StackPanel>
+                            <TextBlock Text="Pinned"
+                                       FontWeight="SemiBold"
+                                       Foreground="#111827" />
+                            <DockPanel Margin="0,8,0,0">
+                                <Button DockPanel.Dock="Right"
+                                        Command="{Binding AddPinnedCommand}"
+                                        Content="Add"
+                                        MinWidth="52"
+                                        Margin="8,0,0,0"
+                                        Padding="8,4" />
+                                <TextBox Text="{Binding NewPinnedText, UpdateSourceTrigger=PropertyChanged}"
+                                         MinHeight="28"
+                                         VerticalContentAlignment="Center" />
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding PinnedItems}"
+                                          Margin="0,8,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Text}"
+                                                       TextWrapping="Wrap"
+                                                       Foreground="#334155"
+                                                       VerticalAlignment="Center" />
+                                            <Button Grid.Column="1"
+                                                    Command="{Binding DataContext.DeletePinnedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="Delete"
+                                                    Margin="8,0,0,0"
+                                                    Padding="6,2" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
 
-                <Border Padding="10"
-                        Margin="0,0,0,8"
-                        Background="White"
-                        BorderBrush="#E2E8F0"
-                        BorderThickness="1"
-                        CornerRadius="4">
-                    <StackPanel>
-                        <TextBlock Text="Todo"
-                                   FontWeight="SemiBold"
-                                   Foreground="#111827" />
-                        <CheckBox Margin="0,6,0,0"
-                                  Content="{Binding TodoText}"
-                                  IsChecked="False"
-                                  Foreground="#334155" />
-                    </StackPanel>
-                </Border>
+                    <Border Padding="10"
+                            Margin="0,0,0,8"
+                            Background="White"
+                            BorderBrush="#E2E8F0"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <StackPanel>
+                            <TextBlock Text="Todo"
+                                       FontWeight="SemiBold"
+                                       Foreground="#111827" />
+                            <DockPanel Margin="0,8,0,0">
+                                <Button DockPanel.Dock="Right"
+                                        Command="{Binding AddTodoCommand}"
+                                        Content="Add"
+                                        MinWidth="52"
+                                        Margin="8,0,0,0"
+                                        Padding="8,4" />
+                                <TextBox Text="{Binding NewTodoText, UpdateSourceTrigger=PropertyChanged}"
+                                         MinHeight="28"
+                                         VerticalContentAlignment="Center" />
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding TodoItems}"
+                                          Margin="0,8,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox IsChecked="{Binding IsDone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding Text}"
+                                                       TextWrapping="Wrap"
+                                                       Foreground="#334155"
+                                                       VerticalAlignment="Center"
+                                                       Margin="8,0,0,0" />
+                                            <Button Grid.Column="2"
+                                                    Command="{Binding DataContext.DeleteTodoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="Delete"
+                                                    Margin="8,0,0,0"
+                                                    Padding="6,2" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
 
-                <Border Padding="10"
-                        Margin="0,0,0,8"
-                        Background="White"
-                        BorderBrush="#E2E8F0"
-                        BorderThickness="1"
-                        CornerRadius="4">
-                    <StackPanel>
-                        <TextBlock Text="Commands"
-                                   FontWeight="SemiBold"
-                                   Foreground="#111827" />
-                        <TextBox Text="{Binding CommandText, Mode=OneWay}"
-                                 Margin="0,6,0,0"
-                                 IsReadOnly="True"
-                                 BorderThickness="0"
-                                 Background="#F1F5F9"
-                                 Padding="6"
-                                 Foreground="#1E293B" />
-                    </StackPanel>
-                </Border>
+                    <Border Padding="10"
+                            Margin="0,0,0,8"
+                            Background="White"
+                            BorderBrush="#E2E8F0"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <StackPanel>
+                            <TextBlock Text="Commands"
+                                       FontWeight="SemiBold"
+                                       Foreground="#111827" />
+                            <DockPanel Margin="0,8,0,0">
+                                <Button DockPanel.Dock="Right"
+                                        Command="{Binding AddCommandItemCommand}"
+                                        Content="Add"
+                                        MinWidth="52"
+                                        Margin="8,0,0,0"
+                                        Padding="8,4" />
+                                <TextBox Text="{Binding NewCommandText, UpdateSourceTrigger=PropertyChanged}"
+                                         MinHeight="28"
+                                         VerticalContentAlignment="Center" />
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding CommandItems}"
+                                          Margin="0,8,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Text}"
+                                                       TextWrapping="Wrap"
+                                                       FontFamily="Consolas"
+                                                       Background="#F1F5F9"
+                                                       Foreground="#1E293B"
+                                                       Padding="6"
+                                                       VerticalAlignment="Center" />
+                                            <Button Grid.Column="1"
+                                                    Command="{Binding DataContext.DeleteCommandItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="Delete"
+                                                    Margin="8,0,0,0"
+                                                    Padding="6,2" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
 
-                <Border Padding="10"
-                        Background="White"
-                        BorderBrush="#E2E8F0"
-                        BorderThickness="1"
-                        CornerRadius="4">
-                    <StackPanel>
-                        <TextBlock Text="Notes"
-                                   FontWeight="SemiBold"
-                                   Foreground="#111827" />
-                        <TextBox Text="{Binding NotesText, Mode=OneWay}"
-                                 Margin="0,6,0,0"
-                                 MinHeight="76"
-                                 TextWrapping="Wrap"
-                                 AcceptsReturn="True"
-                                 IsReadOnly="True"
-                                 BorderThickness="0"
-                                 Background="#F1F5F9"
-                                 Padding="6"
-                                 Foreground="#1E293B" />
-                    </StackPanel>
-                </Border>
-            </StackPanel>
+                    <Border Padding="10"
+                            Background="White"
+                            BorderBrush="#E2E8F0"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <StackPanel>
+                            <TextBlock Text="Notes"
+                                       FontWeight="SemiBold"
+                                       Foreground="#111827" />
+                            <TextBox Text="{Binding NewNoteText, UpdateSourceTrigger=PropertyChanged}"
+                                     Margin="0,8,0,0"
+                                     MinHeight="54"
+                                     TextWrapping="Wrap"
+                                     AcceptsReturn="True"
+                                     VerticalScrollBarVisibility="Auto" />
+                            <Button Command="{Binding AddNoteCommand}"
+                                    Content="Add"
+                                    MinWidth="52"
+                                    Margin="0,8,0,0"
+                                    Padding="8,4"
+                                    HorizontalAlignment="Right" />
+                            <ItemsControl ItemsSource="{Binding NoteItems}"
+                                          Margin="0,8,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Text}"
+                                                       TextWrapping="Wrap"
+                                                       Foreground="#334155"
+                                                       VerticalAlignment="Center" />
+                                            <Button Grid.Column="1"
+                                                    Command="{Binding DataContext.DeleteNoteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="Delete"
+                                                    Margin="8,0,0,0"
+                                                    Padding="6,2" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
     </Border>
 </UserControl>
