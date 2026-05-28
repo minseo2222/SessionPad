@@ -53,6 +53,10 @@ internal static partial class User32
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool IsWindowVisible(IntPtr hWnd);
 
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool IsWindow(IntPtr hWnd);
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern int GetClassNameW(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 

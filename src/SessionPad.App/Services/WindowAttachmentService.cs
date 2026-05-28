@@ -9,6 +9,16 @@ public sealed class WindowAttachmentService
 {
     private const int Gap = 8;
 
+    private IntPtr _attachedTargetHwnd;
+    private WindowBounds _lastTargetBounds;
+    private int _lastSessionWidth;
+    private int _lastSessionHeight;
+    private string _attachSide = "Right";
+
+    public bool HasAttachedTarget => _attachedTargetHwnd != IntPtr.Zero;
+
+    public IntPtr AttachedTargetHwnd => _attachedTargetHwnd;
+
     public WindowAttachmentResult TryAttachToWindow(IntPtr sessionPadHwnd, DetectedWindowInfo target)
     {
         try
@@ -16,72 +26,135 @@ public sealed class WindowAttachmentService
             var validationError = ValidateTarget(sessionPadHwnd, target);
             if (validationError is not null)
             {
+                ClearAttachedTarget();
                 return WindowAttachmentResult.NotAttached(validationError);
             }
 
-            if (!User32.GetWindowRect(sessionPadHwnd, out var sessionRect))
+            if (!TryReadSessionSize(sessionPadHwnd, out var sessionWidth, out var sessionHeight, out var error))
             {
-                return WindowAttachmentResult.NotAttached(
-                    $"Could not read SessionPad bounds. Win32 error: {Marshal.GetLastWin32Error()}");
+                ClearAttachedTarget();
+                return WindowAttachmentResult.NotAttached(error ?? "SessionPad bounds are not usable.");
             }
 
-            var sessionWidth = sessionRect.Right - sessionRect.Left;
-            var sessionHeight = sessionRect.Bottom - sessionRect.Top;
-            if (sessionWidth <= 0 || sessionHeight <= 0)
+            if (!TryReadTargetBounds(target.Hwnd, out var targetBounds, out error))
             {
-                return WindowAttachmentResult.NotAttached("SessionPad bounds are not usable.");
+                ClearAttachedTarget();
+                return WindowAttachmentResult.NotAttached(error ?? "Target window bounds are not usable.");
             }
 
-            var side = "Right";
-            var x = target.Right + Gap;
-            var y = target.Top;
-
-            if (TryGetWorkArea(target.Hwnd, out var workArea))
+            if (!TryPositionSessionPad(sessionPadHwnd, target.Hwnd, targetBounds, sessionWidth, sessionHeight, out var side, out error))
             {
-                var rightX = target.Right + Gap;
-                var leftX = target.Left - Gap - sessionWidth;
-
-                if (rightX + sessionWidth <= workArea.Right)
-                {
-                    x = rightX;
-                    side = "Right";
-                }
-                else if (leftX >= workArea.Left)
-                {
-                    x = leftX;
-                    side = "Left";
-                }
-                else
-                {
-                    x = Clamp(rightX, workArea.Left, workArea.Right - sessionWidth);
-                    side = "Clamped";
-                }
-
-                y = Clamp(target.Top, workArea.Top, workArea.Bottom - sessionHeight);
+                ClearAttachedTarget();
+                return WindowAttachmentResult.NotAttached(error ?? "Could not position SessionPad.");
             }
 
-            var moved = User32.SetWindowPos(
-                sessionPadHwnd,
-                IntPtr.Zero,
-                x,
-                y,
-                0,
-                0,
-                User32.SwpNoSize | User32.SwpNoZOrder | User32.SwpNoActivate);
-
-            if (!moved)
-            {
-                return WindowAttachmentResult.NotAttached(
-                    $"Could not position SessionPad. Win32 error: {Marshal.GetLastWin32Error()}");
-            }
+            _attachedTargetHwnd = target.Hwnd;
+            _lastTargetBounds = targetBounds;
+            _lastSessionWidth = sessionWidth;
+            _lastSessionHeight = sessionHeight;
+            _attachSide = side;
 
             return WindowAttachmentResult.Attached(side);
         }
         catch (Exception ex)
         {
             Debug.WriteLine(ex);
+            ClearAttachedTarget();
             return WindowAttachmentResult.NotAttached($"Attach failed: {ex.GetType().Name}: {ex.Message}");
         }
+    }
+
+    public WindowAttachmentResult UpdateAttachedWindowPosition(IntPtr sessionPadHwnd)
+    {
+        try
+        {
+            if (_attachedTargetHwnd == IntPtr.Zero)
+            {
+                return WindowAttachmentResult.NotAttached("No attached target.");
+            }
+
+            if (sessionPadHwnd == IntPtr.Zero)
+            {
+                return Detach("SessionPad window handle is not available.");
+            }
+
+            if (_attachedTargetHwnd == sessionPadHwnd)
+            {
+                return Detach("No external target detected.");
+            }
+
+            if (!User32.IsWindow(_attachedTargetHwnd))
+            {
+                return Detach("Attached target is no longer valid.");
+            }
+
+            if (User32.IsIconic(_attachedTargetHwnd))
+            {
+                return WindowAttachmentResult.TargetMinimized(_attachSide);
+            }
+
+            if (!User32.IsWindowVisible(_attachedTargetHwnd))
+            {
+                return Detach("Attached target is not visible.");
+            }
+
+            if (!TryReadTargetBounds(_attachedTargetHwnd, out var targetBounds, out var error))
+            {
+                return WindowAttachmentResult.FollowWarning(
+                    _attachSide,
+                    error ?? "Could not read attached target bounds.");
+            }
+
+            if (!TryReadSessionSize(sessionPadHwnd, out var sessionWidth, out var sessionHeight, out error))
+            {
+                return WindowAttachmentResult.FollowWarning(
+                    _attachSide,
+                    error ?? "Could not read SessionPad bounds.");
+            }
+
+            if (targetBounds == _lastTargetBounds
+                && sessionWidth == _lastSessionWidth
+                && sessionHeight == _lastSessionHeight)
+            {
+                return WindowAttachmentResult.Following(_attachSide, "Target unchanged");
+            }
+
+            if (!TryPositionSessionPad(
+                    sessionPadHwnd,
+                    _attachedTargetHwnd,
+                    targetBounds,
+                    sessionWidth,
+                    sessionHeight,
+                    out var side,
+                    out error))
+            {
+                return WindowAttachmentResult.FollowWarning(
+                    _attachSide,
+                    error ?? "Could not update SessionPad position.");
+            }
+
+            _lastTargetBounds = targetBounds;
+            _lastSessionWidth = sessionWidth;
+            _lastSessionHeight = sessionHeight;
+            _attachSide = side;
+
+            return WindowAttachmentResult.Following(
+                side,
+                $"Updated position beside target ({targetBounds.Width}x{targetBounds.Height})");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+            return WindowAttachmentResult.FollowWarning(
+                _attachSide,
+                $"Follow update failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    public WindowAttachmentResult Detach(string reason)
+    {
+        ClearAttachedTarget();
+        return WindowAttachmentResult.NotAttached(reason);
     }
 
     private static string? ValidateTarget(IntPtr sessionPadHwnd, DetectedWindowInfo target)
@@ -101,6 +174,11 @@ public sealed class WindowAttachmentService
             return "No external target detected.";
         }
 
+        if (!User32.IsWindow(target.Hwnd))
+        {
+            return "Target window is no longer valid.";
+        }
+
         if (!target.IsVisible)
         {
             return "Target window is not visible.";
@@ -117,6 +195,109 @@ public sealed class WindowAttachmentService
         }
 
         return null;
+    }
+
+    private static bool TryReadSessionSize(
+        IntPtr sessionPadHwnd,
+        out int sessionWidth,
+        out int sessionHeight,
+        out string? error)
+    {
+        sessionWidth = 0;
+        sessionHeight = 0;
+        error = null;
+
+        if (!User32.GetWindowRect(sessionPadHwnd, out var sessionRect))
+        {
+            error = $"Could not read SessionPad bounds. Win32 error: {Marshal.GetLastWin32Error()}";
+            return false;
+        }
+
+        sessionWidth = sessionRect.Right - sessionRect.Left;
+        sessionHeight = sessionRect.Bottom - sessionRect.Top;
+        if (sessionWidth <= 0 || sessionHeight <= 0)
+        {
+            error = "SessionPad bounds are not usable.";
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool TryReadTargetBounds(IntPtr targetHwnd, out WindowBounds bounds, out string? error)
+    {
+        bounds = default;
+        error = null;
+
+        if (!User32.GetWindowRect(targetHwnd, out var targetRect))
+        {
+            error = $"Could not read target bounds. Win32 error: {Marshal.GetLastWin32Error()}";
+            return false;
+        }
+
+        bounds = new WindowBounds(targetRect.Left, targetRect.Top, targetRect.Right, targetRect.Bottom);
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            error = "Target window bounds are not usable.";
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool TryPositionSessionPad(
+        IntPtr sessionPadHwnd,
+        IntPtr targetHwnd,
+        WindowBounds targetBounds,
+        int sessionWidth,
+        int sessionHeight,
+        out string side,
+        out string? error)
+    {
+        side = "Right";
+        error = null;
+
+        var x = targetBounds.Right + Gap;
+        var y = targetBounds.Top;
+
+        if (TryGetWorkArea(targetHwnd, out var workArea))
+        {
+            var rightX = targetBounds.Right + Gap;
+            var leftX = targetBounds.Left - Gap - sessionWidth;
+
+            if (rightX + sessionWidth <= workArea.Right)
+            {
+                x = rightX;
+                side = "Right";
+            }
+            else if (leftX >= workArea.Left)
+            {
+                x = leftX;
+                side = "Left";
+            }
+            else
+            {
+                x = Clamp(rightX, workArea.Left, workArea.Right - sessionWidth);
+                side = "Clamped";
+            }
+
+            y = Clamp(targetBounds.Top, workArea.Top, workArea.Bottom - sessionHeight);
+        }
+
+        if (User32.SetWindowPos(
+                sessionPadHwnd,
+                IntPtr.Zero,
+                x,
+                y,
+                0,
+                0,
+                User32.SwpNoSize | User32.SwpNoZOrder | User32.SwpNoActivate))
+        {
+            return true;
+        }
+
+        error = $"Could not position SessionPad. Win32 error: {Marshal.GetLastWin32Error()}";
+        return false;
     }
 
     private static bool TryGetWorkArea(IntPtr hwnd, out NativeRect workArea)
@@ -151,5 +332,21 @@ public sealed class WindowAttachmentService
         }
 
         return Math.Min(Math.Max(value, min), max);
+    }
+
+    private void ClearAttachedTarget()
+    {
+        _attachedTargetHwnd = IntPtr.Zero;
+        _lastTargetBounds = default;
+        _lastSessionWidth = 0;
+        _lastSessionHeight = 0;
+        _attachSide = "Right";
+    }
+
+    private readonly record struct WindowBounds(int Left, int Top, int Right, int Bottom)
+    {
+        public int Width => Right - Left;
+
+        public int Height => Bottom - Top;
     }
 }

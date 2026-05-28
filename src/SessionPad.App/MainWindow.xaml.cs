@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Threading;
+using SessionPad.App.Models;
 using SessionPad.App.Native;
 using SessionPad.App.Services;
 using SessionPad.App.ViewModels;
@@ -9,10 +11,13 @@ namespace SessionPad.App;
 
 public partial class MainWindow : Window
 {
+    private static readonly TimeSpan AttachmentPollInterval = TimeSpan.FromMilliseconds(150);
+
     private readonly HotkeyService _hotkeyService = new();
     private readonly WindowDetectionService _windowDetectionService = new();
     private readonly WindowAttachmentService _windowAttachmentService = new();
     private readonly FloatingNoteViewModel _viewModel = new();
+    private readonly DispatcherTimer _attachmentTimer = new();
     private HwndSource? _source;
     private IntPtr _windowHandle;
     private bool _hotkeyRegistered;
@@ -21,6 +26,9 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = _viewModel;
+
+        _attachmentTimer.Interval = AttachmentPollInterval;
+        _attachmentTimer.Tick += OnAttachmentTimerTick;
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -41,6 +49,10 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _attachmentTimer.Stop();
+        _attachmentTimer.Tick -= OnAttachmentTimerTick;
+        _windowAttachmentService.Detach("SessionPad closed.");
+
         if (_hotkeyRegistered)
         {
             _hotkeyService.Unregister(_windowHandle);
@@ -66,7 +78,7 @@ public partial class MainWindow : Window
 
     private void OnHotkeyPressed()
     {
-        Models.DetectedWindowInfo detectedWindow;
+        DetectedWindowInfo detectedWindow;
 
         try
         {
@@ -76,14 +88,86 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             Debug.WriteLine(ex);
-            detectedWindow = Models.DetectedWindowInfo.FromException(ex);
+            detectedWindow = DetectedWindowInfo.FromException(ex);
             _viewModel.SetLastDetectedWindow(detectedWindow);
         }
 
         ShowAndRestoreSafely();
         var attachmentResult = _windowAttachmentService.TryAttachToWindow(_windowHandle, detectedWindow);
         _viewModel.SetAttachmentResult(attachmentResult);
-        ActivateSafely();
+        UpdateAttachmentTimer(attachmentResult);
+        ApplyAttachmentVisibility(attachmentResult);
+        if (!attachmentResult.IsHiddenBecauseTargetMinimized)
+        {
+            ActivateSafely();
+        }
+    }
+
+    private void OnAttachmentTimerTick(object? sender, EventArgs e)
+    {
+        WindowAttachmentResult attachmentResult;
+
+        try
+        {
+            attachmentResult = _windowAttachmentService.UpdateAttachedWindowPosition(_windowHandle);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+            attachmentResult = _windowAttachmentService.Detach(
+                $"Follow update failed: {ex.GetType().Name}: {ex.Message}");
+        }
+
+        _viewModel.SetAttachmentResult(attachmentResult);
+        UpdateAttachmentTimer(attachmentResult);
+        ApplyAttachmentVisibility(attachmentResult);
+    }
+
+    private void UpdateAttachmentTimer(WindowAttachmentResult result)
+    {
+        if (result.ShouldContinueTracking)
+        {
+            if (!_attachmentTimer.IsEnabled)
+            {
+                _attachmentTimer.Start();
+            }
+
+            return;
+        }
+
+        if (_attachmentTimer.IsEnabled)
+        {
+            _attachmentTimer.Stop();
+        }
+    }
+
+    private void ApplyAttachmentVisibility(WindowAttachmentResult result)
+    {
+        if (result.IsHiddenBecauseTargetMinimized)
+        {
+            HideSafely();
+            return;
+        }
+
+        if (!IsVisible)
+        {
+            ShowAndRestoreSafely();
+        }
+    }
+
+    private void HideSafely()
+    {
+        try
+        {
+            if (IsVisible)
+            {
+                Hide();
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"SessionPad could not hide while target is minimized: {ex}");
+        }
     }
 
     private void ShowAndRestoreSafely()
@@ -126,9 +210,4 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ShowAndActivateSafely()
-    {
-        ShowAndRestoreSafely();
-        ActivateSafely();
-    }
 }

@@ -17,9 +17,11 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private NotePanelState _panelState = NotePanelState.CompactNote;
     private DetectedWindowInfo? _lastDetectedWindow;
     private bool _isAttachedToWindow;
+    private bool _isHiddenBecauseTargetMinimized;
     private string _attachmentStatus = "Not attached";
     private string? _attachmentSide;
     private string? _attachmentError;
+    private string? _lastFollowUpdateText;
     private string _newPinnedText = string.Empty;
     private string _newTodoText = string.Empty;
     private string _newCommandText = string.Empty;
@@ -133,6 +135,18 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         private set => SetField(ref _attachmentError, value);
     }
 
+    public bool IsHiddenBecauseTargetMinimized
+    {
+        get => _isHiddenBecauseTargetMinimized;
+        private set => SetField(ref _isHiddenBecauseTargetMinimized, value);
+    }
+
+    public string? LastFollowUpdateText
+    {
+        get => _lastFollowUpdateText;
+        private set => SetField(ref _lastFollowUpdateText, value);
+    }
+
     public string NewPinnedText
     {
         get => _newPinnedText;
@@ -168,6 +182,8 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         AttachmentStatus = result.Status;
         AttachmentSide = result.Side;
         AttachmentError = result.Error;
+        IsHiddenBecauseTargetMinimized = result.IsHiddenBecauseTargetMinimized;
+        LastFollowUpdateText = result.FollowUpdateText;
     }
 
     private void LoadNote()

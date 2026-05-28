@@ -78,6 +78,11 @@
                                        Text="{Binding AttachmentSide, Mode=OneWay, TargetNullValue=(none), FallbackValue=Attach side: (none), StringFormat={}Attach side: {0}}" />
                             <TextBlock Foreground="#334155"
                                        Text="{Binding AttachmentStatus, Mode=OneWay, TargetNullValue=Not attached, FallbackValue=Attach status: Not attached, StringFormat={}Attach status: {0}}" />
+                            <TextBlock Foreground="#334155"
+                                       Text="{Binding IsHiddenBecauseTargetMinimized, Mode=OneWay, FallbackValue=Hidden by target minimize: False, StringFormat={}Hidden by target minimize: {0}}" />
+                            <TextBlock Foreground="#334155"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding LastFollowUpdateText, Mode=OneWay, TargetNullValue=None, FallbackValue=Follow: None, StringFormat={}Follow: {0}}" />
                             <TextBlock Foreground="#B45309"
                                        TextWrapping="Wrap"
                                        Text="{Binding AttachmentError, Mode=OneWay, TargetNullValue=None, FallbackValue=Attach error: None, StringFormat={}Attach error: {0}}" />
