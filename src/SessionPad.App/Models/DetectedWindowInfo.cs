@@ -2,6 +2,8 @@ namespace SessionPad.App.Models;
 
 public sealed record DetectedWindowInfo
 {
+    public IntPtr Hwnd { get; init; }
+
     public required string HwndHex { get; init; }
 
     public required string ProcessName { get; init; }
@@ -39,6 +41,7 @@ public sealed record DetectedWindowInfo
         return new DetectedWindowInfo
         {
             HwndHex = FormatHwnd(hwnd),
+            Hwnd = hwnd,
             ProcessName = "(unknown)",
             Title = string.Empty,
             ProcessId = 0,

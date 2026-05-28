@@ -13,6 +13,14 @@ internal static partial class User32
 
     public const uint VirtualKeyN = 0x4E;
 
+    public const uint SwpNoSize = 0x0001;
+
+    public const uint SwpNoZOrder = 0x0004;
+
+    public const uint SwpNoActivate = 0x0010;
+
+    public const uint MonitorDefaultToNearest = 0x00000002;
+
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
@@ -47,6 +55,24 @@ internal static partial class User32
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern int GetClassNameW(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetWindowPos(
+        IntPtr hWnd,
+        IntPtr hWndInsertAfter,
+        int x,
+        int y,
+        int cx,
+        int cy,
+        uint uFlags);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetMonitorInfoW(IntPtr hMonitor, ref MonitorInfo lpmi);
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -59,4 +85,16 @@ internal readonly struct NativeRect
     public readonly int Right;
 
     public readonly int Bottom;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+internal struct MonitorInfo
+{
+    public int Size;
+
+    public NativeRect Monitor;
+
+    public NativeRect WorkArea;
+
+    public uint Flags;
 }

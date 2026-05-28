@@ -11,6 +11,7 @@ public partial class MainWindow : Window
 {
     private readonly HotkeyService _hotkeyService = new();
     private readonly WindowDetectionService _windowDetectionService = new();
+    private readonly WindowAttachmentService _windowAttachmentService = new();
     private readonly FloatingNoteViewModel _viewModel = new();
     private HwndSource? _source;
     private IntPtr _windowHandle;
@@ -65,33 +66,39 @@ public partial class MainWindow : Window
 
     private void OnHotkeyPressed()
     {
+        Models.DetectedWindowInfo detectedWindow;
+
         try
         {
-            var detectedWindow = _windowDetectionService.GetForegroundWindowInfo(_windowHandle);
+            detectedWindow = _windowDetectionService.GetForegroundWindowInfo(_windowHandle);
             _viewModel.SetLastDetectedWindow(detectedWindow);
         }
         catch (Exception ex)
         {
             Debug.WriteLine(ex);
-            _viewModel.SetLastDetectedWindow(Models.DetectedWindowInfo.FromException(ex));
+            detectedWindow = Models.DetectedWindowInfo.FromException(ex);
+            _viewModel.SetLastDetectedWindow(detectedWindow);
         }
 
-        ShowAndActivateSafely();
+        ShowAndRestoreSafely();
+        var attachmentResult = _windowAttachmentService.TryAttachToWindow(_windowHandle, detectedWindow);
+        _viewModel.SetAttachmentResult(attachmentResult);
+        ActivateSafely();
     }
 
-    private void ShowAndActivateSafely()
+    private void ShowAndRestoreSafely()
     {
         try
         {
-            ShowAndActivate();
+            ShowAndRestore();
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"SessionPad could not show or activate the window: {ex}");
+            Debug.WriteLine($"SessionPad could not show or restore the window: {ex}");
         }
     }
 
-    private void ShowAndActivate()
+    private void ShowAndRestore()
     {
         if (!IsVisible)
         {
@@ -102,10 +109,26 @@ public partial class MainWindow : Window
         {
             WindowState = WindowState.Normal;
         }
+    }
 
-        Activate();
-        Topmost = true;
-        Topmost = false;
-        Focus();
+    private void ActivateSafely()
+    {
+        try
+        {
+            Activate();
+            Topmost = true;
+            Topmost = false;
+            Focus();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"SessionPad could not activate the window: {ex}");
+        }
+    }
+
+    private void ShowAndActivateSafely()
+    {
+        ShowAndRestoreSafely();
+        ActivateSafely();
     }
 }

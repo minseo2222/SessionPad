@@ -26,6 +26,7 @@ public sealed class WindowDetectionService
 
             return new DetectedWindowInfo
             {
+                Hwnd = hwnd,
                 HwndHex = FormatHwnd(hwnd),
                 ProcessName = GetProcessName(processId, out var processNameError),
                 Title = GetWindowTitle(hwnd, out var titleError),

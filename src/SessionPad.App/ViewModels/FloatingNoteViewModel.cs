@@ -16,6 +16,10 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private DateTimeOffset _createdAt = DateTimeOffset.UtcNow;
     private NotePanelState _panelState = NotePanelState.CompactNote;
     private DetectedWindowInfo? _lastDetectedWindow;
+    private bool _isAttachedToWindow;
+    private string _attachmentStatus = "Not attached";
+    private string? _attachmentSide;
+    private string? _attachmentError;
     private string _newPinnedText = string.Empty;
     private string _newTodoText = string.Empty;
     private string _newCommandText = string.Empty;
@@ -105,6 +109,30 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         private set => SetField(ref _lastDetectedWindow, value);
     }
 
+    public bool IsAttachedToWindow
+    {
+        get => _isAttachedToWindow;
+        private set => SetField(ref _isAttachedToWindow, value);
+    }
+
+    public string AttachmentStatus
+    {
+        get => _attachmentStatus;
+        private set => SetField(ref _attachmentStatus, value);
+    }
+
+    public string? AttachmentSide
+    {
+        get => _attachmentSide;
+        private set => SetField(ref _attachmentSide, value);
+    }
+
+    public string? AttachmentError
+    {
+        get => _attachmentError;
+        private set => SetField(ref _attachmentError, value);
+    }
+
     public string NewPinnedText
     {
         get => _newPinnedText;
@@ -132,6 +160,14 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public void SetLastDetectedWindow(DetectedWindowInfo detectedWindow)
     {
         LastDetectedWindow = detectedWindow;
+    }
+
+    public void SetAttachmentResult(WindowAttachmentResult result)
+    {
+        IsAttachedToWindow = result.IsAttached;
+        AttachmentStatus = result.Status;
+        AttachmentSide = result.Side;
+        AttachmentError = result.Error;
     }
 
     private void LoadNote()

@@ -71,6 +71,16 @@
                             <TextBlock Foreground="#B45309"
                                        TextWrapping="Wrap"
                                        Text="{Binding LastDetectedWindow.Error, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Status: Ready, StringFormat={}Status: {0}}" />
+                            <TextBlock Margin="0,8,0,0"
+                                       Foreground="#334155"
+                                       Text="{Binding IsAttachedToWindow, Mode=OneWay, FallbackValue=Attached: False, StringFormat={}Attached: {0}}" />
+                            <TextBlock Foreground="#334155"
+                                       Text="{Binding AttachmentSide, Mode=OneWay, TargetNullValue=(none), FallbackValue=Attach side: (none), StringFormat={}Attach side: {0}}" />
+                            <TextBlock Foreground="#334155"
+                                       Text="{Binding AttachmentStatus, Mode=OneWay, TargetNullValue=Not attached, FallbackValue=Attach status: Not attached, StringFormat={}Attach status: {0}}" />
+                            <TextBlock Foreground="#B45309"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding AttachmentError, Mode=OneWay, TargetNullValue=None, FallbackValue=Attach error: None, StringFormat={}Attach error: {0}}" />
                         </StackPanel>
                     </Border>
 
