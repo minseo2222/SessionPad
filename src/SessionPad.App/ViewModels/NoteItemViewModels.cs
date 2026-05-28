@@ -5,10 +5,13 @@ namespace SessionPad.App.ViewModels;
 
 public sealed class PinnedItemViewModel
 {
-    public PinnedItemViewModel(string text)
+    public PinnedItemViewModel(string id, string text)
     {
+        Id = id;
         Text = text;
     }
+
+    public string Id { get; }
 
     public string Text { get; }
 }
@@ -17,12 +20,16 @@ public sealed class TodoItemViewModel : INotifyPropertyChanged
 {
     private bool _isDone;
 
-    public TodoItemViewModel(string text)
+    public TodoItemViewModel(string id, string text, bool isDone = false)
     {
+        Id = id;
         Text = text;
+        _isDone = isDone;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    public string Id { get; }
 
     public string Text { get; }
 
@@ -49,20 +56,26 @@ public sealed class TodoItemViewModel : INotifyPropertyChanged
 
 public sealed class CommandItemViewModel
 {
-    public CommandItemViewModel(string text)
+    public CommandItemViewModel(string id, string text)
     {
+        Id = id;
         Text = text;
     }
+
+    public string Id { get; }
 
     public string Text { get; }
 }
 
 public sealed class NoteItemViewModel
 {
-    public NoteItemViewModel(string text)
+    public NoteItemViewModel(string id, string text)
     {
+        Id = id;
         Text = text;
     }
+
+    public string Id { get; }
 
     public string Text { get; }
 }

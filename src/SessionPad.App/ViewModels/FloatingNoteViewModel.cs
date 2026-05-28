@@ -1,13 +1,19 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using SessionPad.App.Models;
+using SessionPad.App.Services;
 
 namespace SessionPad.App.ViewModels;
 
 public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 {
+    private readonly NoteStorageService _storageService;
+    private DateTimeOffset _createdAt = DateTimeOffset.UtcNow;
     private NotePanelState _panelState = NotePanelState.CompactNote;
     private string _newPinnedText = string.Empty;
     private string _newTodoText = string.Empty;
@@ -15,7 +21,14 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string _newNoteText = string.Empty;
 
     public FloatingNoteViewModel()
+        : this(new NoteStorageService())
     {
+    }
+
+    public FloatingNoteViewModel(NoteStorageService storageService)
+    {
+        _storageService = storageService;
+
         ExpandCommand = new RelayCommand(() => PanelState = NotePanelState.CompactNote);
         CollapseCommand = new RelayCommand(() => PanelState = NotePanelState.DockedTab);
 
@@ -29,11 +42,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         DeleteNoteCommand = new RelayCommand(DeleteNote);
 
         TodoItems.CollectionChanged += OnTodoItemsChanged;
-
-        PinnedItems.Add(new PinnedItemViewModel("Keep this note tied to the current work context."));
-        TodoItems.Add(new TodoItemViewModel("Sketch Slice 2 UI behavior."));
-        CommandItems.Add(new CommandItemViewModel("dotnet build"));
-        NoteItems.Add(new NoteItemViewModel("Slice 2 edits are in memory only."));
+        LoadNote();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -113,71 +122,207 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         set => SetField(ref _newNoteText, value);
     }
 
+    private void LoadNote()
+    {
+        var savedNote = _storageService.LoadDefaultNote();
+        if (savedNote is null)
+        {
+            LoadDefaultItems();
+            return;
+        }
+
+        _createdAt = savedNote.CreatedAt == default ? DateTimeOffset.UtcNow : savedNote.CreatedAt;
+        PanelState = savedNote.PanelState;
+        ReplaceItems(savedNote);
+    }
+
+    private void LoadDefaultItems()
+    {
+        _createdAt = DateTimeOffset.UtcNow;
+        PanelState = NotePanelState.CompactNote;
+
+        PinnedItems.Add(new PinnedItemViewModel("p1", "Keep this note tied to the current work context."));
+        TodoItems.Add(new TodoItemViewModel("t1", "Sketch Slice 3 persistence behavior."));
+        CommandItems.Add(new CommandItemViewModel("c1", "dotnet build"));
+        NoteItems.Add(new NoteItemViewModel("n1", "Slice 3 saves the default note locally as JSON."));
+    }
+
+    private void ReplaceItems(SessionNote note)
+    {
+        PinnedItems.Clear();
+        CommandItems.Clear();
+        NoteItems.Clear();
+        ClearTodoItems();
+
+        foreach (var item in note.Sections.Pinned.OrderBy(item => item.SortOrder))
+        {
+            PinnedItems.Add(new PinnedItemViewModel(RequiredId(item.Id, "p"), item.Text));
+        }
+
+        foreach (var item in note.Sections.Todo.OrderBy(item => item.SortOrder))
+        {
+            TodoItems.Add(new TodoItemViewModel(RequiredId(item.Id, "t"), item.Text, item.IsDone));
+        }
+
+        foreach (var item in note.Sections.Commands.OrderBy(item => item.SortOrder))
+        {
+            CommandItems.Add(new CommandItemViewModel(RequiredId(item.Id, "c"), item.Text));
+        }
+
+        foreach (var item in note.Sections.Notes.OrderBy(item => item.SortOrder))
+        {
+            NoteItems.Add(new NoteItemViewModel(RequiredId(item.Id, "n"), item.Text));
+        }
+    }
+
+    private void ClearTodoItems()
+    {
+        foreach (var item in TodoItems)
+        {
+            item.PropertyChanged -= OnTodoItemPropertyChanged;
+        }
+
+        TodoItems.Clear();
+    }
+
     private void AddPinned()
     {
-        AddTextItem(NewPinnedText, text => PinnedItems.Add(new PinnedItemViewModel(text)));
-        NewPinnedText = string.Empty;
+        if (AddTextItem(NewPinnedText, text => PinnedItems.Add(new PinnedItemViewModel(CreateId("p"), text))))
+        {
+            NewPinnedText = string.Empty;
+            SaveNote();
+        }
     }
 
     private void DeletePinned(object? item)
     {
-        if (item is PinnedItemViewModel pinnedItem)
+        if (item is PinnedItemViewModel pinnedItem && PinnedItems.Remove(pinnedItem))
         {
-            PinnedItems.Remove(pinnedItem);
+            SaveNote();
         }
     }
 
     private void AddTodo()
     {
-        AddTextItem(NewTodoText, text => TodoItems.Add(new TodoItemViewModel(text)));
-        NewTodoText = string.Empty;
+        if (AddTextItem(NewTodoText, text => TodoItems.Add(new TodoItemViewModel(CreateId("t"), text))))
+        {
+            NewTodoText = string.Empty;
+            SaveNote();
+        }
     }
 
     private void DeleteTodo(object? item)
     {
-        if (item is TodoItemViewModel todoItem)
+        if (item is TodoItemViewModel todoItem && TodoItems.Remove(todoItem))
         {
-            TodoItems.Remove(todoItem);
+            SaveNote();
         }
     }
 
     private void AddCommandItem()
     {
-        AddTextItem(NewCommandText, text => CommandItems.Add(new CommandItemViewModel(text)));
-        NewCommandText = string.Empty;
+        if (AddTextItem(NewCommandText, text => CommandItems.Add(new CommandItemViewModel(CreateId("c"), text))))
+        {
+            NewCommandText = string.Empty;
+            SaveNote();
+        }
     }
 
     private void DeleteCommandItem(object? item)
     {
-        if (item is CommandItemViewModel commandItem)
+        if (item is CommandItemViewModel commandItem && CommandItems.Remove(commandItem))
         {
-            CommandItems.Remove(commandItem);
+            SaveNote();
         }
     }
 
     private void AddNote()
     {
-        AddTextItem(NewNoteText, text => NoteItems.Add(new NoteItemViewModel(text)));
-        NewNoteText = string.Empty;
+        if (AddTextItem(NewNoteText, text => NoteItems.Add(new NoteItemViewModel(CreateId("n"), text))))
+        {
+            NewNoteText = string.Empty;
+            SaveNote();
+        }
     }
 
     private void DeleteNote(object? item)
     {
-        if (item is NoteItemViewModel noteItem)
+        if (item is NoteItemViewModel noteItem && NoteItems.Remove(noteItem))
         {
-            NoteItems.Remove(noteItem);
+            SaveNote();
         }
     }
 
-    private static void AddTextItem(string input, Action<string> add)
+    private static bool AddTextItem(string input, Action<string> add)
     {
         var text = input.Trim();
         if (text.Length == 0)
         {
-            return;
+            return false;
         }
 
         add(text);
+        return true;
+    }
+
+    private void SaveNote()
+    {
+        try
+        {
+            _storageService.SaveDefaultNote(CreateSnapshot());
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            Debug.WriteLine($"SessionPad could not save the default note: {ex.Message}");
+        }
+    }
+
+    private SessionNote CreateSnapshot()
+    {
+        return new SessionNote
+        {
+            SchemaVersion = 1,
+            SessionId = "default",
+            PanelState = PanelState,
+            CreatedAt = _createdAt,
+            UpdatedAt = DateTimeOffset.UtcNow,
+            Sections = new NoteSections
+            {
+                Pinned = PinnedItems
+                    .Select((item, index) => new PinnedItem
+                    {
+                        Id = item.Id,
+                        Text = item.Text,
+                        SortOrder = index
+                    })
+                    .ToList(),
+                Todo = TodoItems
+                    .Select((item, index) => new TodoItem
+                    {
+                        Id = item.Id,
+                        Text = item.Text,
+                        IsDone = item.IsDone,
+                        SortOrder = index
+                    })
+                    .ToList(),
+                Commands = CommandItems
+                    .Select((item, index) => new CommandItem
+                    {
+                        Id = item.Id,
+                        Text = item.Text,
+                        SortOrder = index
+                    })
+                    .ToList(),
+                Notes = NoteItems
+                    .Select((item, index) => new NoteTextItem
+                    {
+                        Id = item.Id,
+                        Text = item.Text,
+                        SortOrder = index
+                    })
+                    .ToList()
+            }
+        };
     }
 
     private void OnTodoItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -206,6 +351,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         if (e.PropertyName == nameof(TodoItemViewModel.IsDone))
         {
             OnPropertyChanged(nameof(OpenTodoCount));
+            SaveNote();
         }
     }
 
@@ -225,10 +371,14 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
-}
 
-public enum NotePanelState
-{
-    DockedTab,
-    CompactNote
+    private static string CreateId(string prefix)
+    {
+        return $"{prefix}{Guid.NewGuid():N}";
+    }
+
+    private static string RequiredId(string id, string prefix)
+    {
+        return string.IsNullOrWhiteSpace(id) ? CreateId(prefix) : id;
+    }
 }
