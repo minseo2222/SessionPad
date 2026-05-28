@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Windows;
+using System.Windows.Interop;
 
 namespace SessionPad.App;
 
@@ -53,6 +55,20 @@ public partial class App : System.Windows.Application
         }
 
         base.OnStartup(e);
+
+        var startSilent = e.Args.Any(argument =>
+            string.Equals(argument, "--silent", StringComparison.OrdinalIgnoreCase));
+        var mainWindow = new MainWindow();
+        MainWindow = mainWindow;
+
+        if (startSilent)
+        {
+            new WindowInteropHelper(mainWindow).EnsureHandle();
+        }
+        else
+        {
+            mainWindow.Show();
+        }
 
         if (shouldStartActivationListener)
         {

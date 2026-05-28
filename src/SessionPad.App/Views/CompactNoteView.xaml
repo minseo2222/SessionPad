@@ -108,6 +108,13 @@
                                        Foreground="#475569"
                                        TextWrapping="Wrap"
                                        Text="SessionPad stores user-entered notes locally. It does not use cloud sync, login, telemetry, screen scraping, or terminal scraping." />
+                            <CheckBox Margin="0,8,0,0"
+                                      Content="Start with Windows"
+                                      IsChecked="{Binding StartOnLogin, Mode=TwoWay}" />
+                            <TextBlock Margin="0,6,0,0"
+                                       Foreground="#B45309"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding StartupStatus, Mode=OneWay, FallbackValue=Startup ready, StringFormat={}Startup: {0}}" />
                             <DockPanel Margin="0,8,0,0">
                                 <Button DockPanel.Dock="Left"
                                         Command="{Binding OpenLocalDataFolderCommand}"

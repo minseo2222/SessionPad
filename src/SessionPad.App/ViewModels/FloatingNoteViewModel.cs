@@ -15,6 +15,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private readonly NoteStorageService _storageService;
     private readonly LocalDataService _localDataService;
     private readonly ClipboardService _clipboardService;
+    private readonly StartupService _startupService = new();
     private SessionSummary? _currentSession;
     private DateTimeOffset _createdAt = DateTimeOffset.UtcNow;
     private NotePanelState _panelState = NotePanelState.CompactNote;
@@ -33,8 +34,10 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string? _attachmentError;
     private string? _lastFollowUpdateText;
     private string _localDataStatus = "Local data ready";
+    private string _startupStatus = "Startup ready";
     private string _lastCommandCopyStatus = "Ready";
     private string _lastDragAttachStatus = "Drag near a window to attach.";
+    private bool _startOnLogin;
     private string _newPinnedText = string.Empty;
     private string _newTodoText = string.Empty;
     private string _newCommandText = string.Empty;
@@ -58,6 +61,8 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         _storageService = storageService;
         _localDataService = localDataService;
         _clipboardService = clipboardService;
+        _startOnLogin = _startupService.IsEnabled();
+        _startupStatus = _startOnLogin ? "Enabled" : "Disabled";
 
         ExpandCommand = new RelayCommand(() => PanelState = NotePanelState.CompactNote);
         CollapseCommand = new RelayCommand(() => PanelState = NotePanelState.DockedTab);
@@ -187,6 +192,41 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     {
         get => _localDataStatus;
         private set => SetField(ref _localDataStatus, value);
+    }
+
+    public bool StartOnLogin
+    {
+        get => _startOnLogin;
+        set
+        {
+            if (_startOnLogin == value)
+            {
+                return;
+            }
+
+            string? error;
+            var succeeded = value
+                ? _startupService.Enable(out error)
+                : _startupService.Disable(out error);
+
+            if (succeeded)
+            {
+                _startOnLogin = value;
+                OnPropertyChanged();
+                StartupStatus = value ? "Enabled" : "Disabled";
+                return;
+            }
+
+            _startOnLogin = _startupService.IsEnabled();
+            OnPropertyChanged();
+            StartupStatus = $"Failed to {(value ? "enable" : "disable")}: {error ?? "Unknown error"}";
+        }
+    }
+
+    public string StartupStatus
+    {
+        get => _startupStatus;
+        private set => SetField(ref _startupStatus, value);
     }
 
     public string LastCommandCopyStatus
