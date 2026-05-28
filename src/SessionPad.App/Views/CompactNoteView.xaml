@@ -94,9 +94,6 @@
                                     Command="{Binding RenameSessionCommand}"
                                     Padding="8,4"
                                     HorizontalAlignment="Left" />
-                            <CheckBox Margin="0,8,0,0"
-                                      Content="Pin to this app (ignore window title)"
-                                      IsChecked="{Binding IsCurrentSessionPinned, Mode=TwoWay}" />
                         </StackPanel>
                     </Border>
 

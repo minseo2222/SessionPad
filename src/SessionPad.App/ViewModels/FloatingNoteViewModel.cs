@@ -39,7 +39,6 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string _lastCommandCopyStatus = "Ready";
     private string _lastDragAttachStatus = "Drag near a window to attach.";
     private bool _startOnLogin;
-    private bool _isCurrentSessionPinned;
     private string _newSessionName = string.Empty;
     private string _newPinnedText = string.Empty;
     private string _newTodoText = string.Empty;
@@ -196,20 +195,6 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     {
         get => _newSessionName;
         set => SetField(ref _newSessionName, value);
-    }
-
-    public bool IsCurrentSessionPinned
-    {
-        get => _isCurrentSessionPinned;
-        set
-        {
-            if (_isCurrentSessionPinned == value)
-            {
-                return;
-            }
-
-            PinCurrentSession(value);
-        }
     }
 
     public string LocalDataPath => _localDataService.GetAppDataDirectory();
@@ -503,70 +488,6 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         }
     }
 
-    private void PinCurrentSession(bool pin)
-    {
-        if (_currentSession is null)
-        {
-            CurrentSessionStatus = "Default note cannot be pinned.";
-            SetCurrentSessionPinnedState(false, forceNotify: true);
-            return;
-        }
-
-        try
-        {
-            var index = _storageService.LoadSessionIndex();
-            var sessionIndex = index.Sessions.FindIndex(session =>
-                string.Equals(session.SessionId, _currentSession.SessionId, StringComparison.Ordinal));
-            if (sessionIndex < 0)
-            {
-                CurrentSessionStatus = "Pin failed: session was not found.";
-                SetCurrentSessionPinnedState(_currentSession.IsPinned, forceNotify: true);
-                return;
-            }
-
-            if (pin)
-            {
-                var currentProcessName = index.Sessions[sessionIndex].Identity?.ProcessName
-                    ?? _currentSession.Identity.ProcessName;
-                for (var i = 0; i < index.Sessions.Count; i++)
-                {
-                    var session = index.Sessions[i];
-                    if (i == sessionIndex || session.Identity is null)
-                    {
-                        continue;
-                    }
-
-                    if (string.Equals(
-                        session.Identity.ProcessName,
-                        currentProcessName,
-                        StringComparison.OrdinalIgnoreCase))
-                    {
-                        index.Sessions[i] = session with { IsPinned = false };
-                    }
-                }
-            }
-
-            var updatedSession = index.Sessions[sessionIndex] with
-            {
-                IsPinned = pin
-            };
-            index.Sessions[sessionIndex] = updatedSession;
-            _storageService.SaveSessionIndex(index);
-
-            _currentSession = _currentSession with { IsPinned = pin };
-            SetCurrentSessionPinnedState(pin, forceNotify: true);
-            CurrentSessionStatus = pin ? "Pinned to this app" : "Unpinned";
-        }
-        catch (Exception ex) when (ex is IOException
-            or UnauthorizedAccessException
-            or JsonException
-            or NotSupportedException)
-        {
-            CurrentSessionStatus = $"Pin failed: {ex.Message}";
-            SetCurrentSessionPinnedState(GetCurrentSessionPinnedState(), forceNotify: true);
-        }
-    }
-
     private void ReplaceItems(SessionNote note)
     {
         PinnedItems.Clear();
@@ -788,7 +709,6 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         CurrentSessionNoteFile = "notes/default.json";
         CurrentNormalizedWindowTitle = null;
         CurrentSessionMatchKey = "default";
-        SetCurrentSessionPinnedState(false);
     }
 
     private void ApplyWindowSessionContext(SessionSummary session, string matchKey, string status)
@@ -802,7 +722,6 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         CurrentSessionNoteFile = session.NoteFile;
         CurrentNormalizedWindowTitle = session.Identity.NormalizedWindowTitle;
         CurrentSessionMatchKey = matchKey;
-        SetCurrentSessionPinnedState(session.IsPinned);
     }
 
     private void ClearNewItemInputs()
@@ -853,41 +772,6 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         field = value;
         OnPropertyChanged(propertyName);
         return true;
-    }
-
-    private void SetCurrentSessionPinnedState(bool isPinned, bool forceNotify = false)
-    {
-        if (_isCurrentSessionPinned == isPinned && !forceNotify)
-        {
-            return;
-        }
-
-        _isCurrentSessionPinned = isPinned;
-        OnPropertyChanged(nameof(IsCurrentSessionPinned));
-    }
-
-    private bool GetCurrentSessionPinnedState()
-    {
-        if (_currentSession is null)
-        {
-            return false;
-        }
-
-        try
-        {
-            var index = _storageService.LoadSessionIndex();
-            var session = index.Sessions.FirstOrDefault(session =>
-                string.Equals(session.SessionId, _currentSession.SessionId, StringComparison.Ordinal));
-            return session?.IsPinned ?? _currentSession.IsPinned;
-        }
-        catch (Exception ex) when (ex is IOException
-            or UnauthorizedAccessException
-            or JsonException
-            or NotSupportedException)
-        {
-            Debug.WriteLine($"SessionPad could not refresh pin state: {ex.Message}");
-            return _currentSession.IsPinned;
-        }
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
