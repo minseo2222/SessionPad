@@ -7,6 +7,13 @@ public sealed class SessionMatcher
 {
     private static readonly Regex WhitespacePattern = new(@"\s+", RegexOptions.Compiled);
 
+    private static readonly HashSet<string> IdeProcessNames = new(StringComparer.Ordinal)
+    {
+        "code",
+        "cursor",
+        "windsurf"
+    };
+
     private static readonly string[] AppSuffixes =
     [
         " - Visual Studio Code",
@@ -123,6 +130,69 @@ public sealed class SessionMatcher
             return updatedSession;
         }
 
+        if (IsIdeProcess(identity.ProcessName))
+        {
+            var legacySessionIndex = -1;
+            var legacySessionLastSeenAt = DateTimeOffset.MinValue;
+            for (var i = 0; i < index.Sessions.Count; i++)
+            {
+                var session = index.Sessions[i];
+                if (session.Identity is null || session.Identity.MatchVersion >= 2)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(
+                    NormalizeProcessName(session.Identity.ProcessName),
+                    identity.ProcessName,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (!string.Equals(
+                    ExtractIdeProjectKey(session.Identity.WindowTitle),
+                    identity.NormalizedWindowTitle,
+                    StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (legacySessionIndex < 0 || session.LastSeenAt > legacySessionLastSeenAt)
+                {
+                    legacySessionIndex = i;
+                    legacySessionLastSeenAt = session.LastSeenAt;
+                }
+            }
+
+            if (legacySessionIndex >= 0)
+            {
+                var session = index.Sessions[legacySessionIndex];
+                var existingSessionId = string.IsNullOrWhiteSpace(session.SessionId)
+                    ? Guid.NewGuid().ToString("N")
+                    : session.SessionId;
+                var updatedSession = session with
+                {
+                    SessionId = existingSessionId,
+                    DisplayName = session.IsUserNamed ? session.DisplayName : CreateDisplayName(identity),
+                    IsUserNamed = session.IsUserNamed,
+                    IsPinned = session.IsPinned,
+                    Identity = identity,
+                    NoteFile = string.IsNullOrWhiteSpace(session.NoteFile)
+                        ? $"notes/{existingSessionId}.json"
+                        : session.NoteFile,
+                    LastSeenAt = now,
+                    RecentNormalizedTitles = UpdateRecentNormalizedTitles(
+                        session.RecentNormalizedTitles,
+                        identity.NormalizedWindowTitle)
+                };
+
+                index.Sessions[legacySessionIndex] = updatedSession;
+                _storageService.SaveSessionIndex(index);
+                return updatedSession;
+            }
+        }
+
         var sessionId = Guid.NewGuid().ToString("N");
         var newSession = new SessionSummary
         {
@@ -156,7 +226,10 @@ public sealed class SessionMatcher
     {
         var processName = NormalizeProcessName(window.ProcessName);
         var originalTitle = CollapseWhitespace(window.Title);
-        var normalizedTitle = NormalizeWindowTitle(originalTitle);
+        var isIdeProcess = IsIdeProcess(processName);
+        var normalizedTitle = isIdeProcess
+            ? ExtractIdeProjectKey(originalTitle)
+            : NormalizeWindowTitle(originalTitle);
         if (string.IsNullOrWhiteSpace(normalizedTitle))
         {
             normalizedTitle = string.IsNullOrWhiteSpace(originalTitle)
@@ -170,8 +243,42 @@ public sealed class SessionMatcher
             WindowTitle = originalTitle,
             NormalizedWindowTitle = normalizedTitle,
             WindowClass = string.IsNullOrWhiteSpace(window.WindowClass) ? null : window.WindowClass.Trim(),
-            MatchVersion = 1
+            MatchVersion = isIdeProcess ? 2 : 1
         };
+    }
+
+    private static string ExtractIdeProjectKey(string title)
+    {
+        var normalized = CollapseWhitespace(title);
+
+        foreach (var suffix in AppSuffixes)
+        {
+            if (normalized.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                normalized = normalized[..^suffix.Length].Trim();
+                break;
+            }
+        }
+
+        if (normalized.Length > 0 && normalized[0] is '\u25CF' or '\u2022' or '*')
+        {
+            normalized = normalized[1..].TrimStart();
+        }
+
+        var segments = normalized
+            .Split(" - ", StringSplitOptions.None)
+            .Select(CollapseWhitespace)
+            .Where(segment => segment.Length > 0)
+            .ToArray();
+
+        var projectKey = segments.Length >= 2
+            ? string.Join(" - ", segments.Skip(1))
+            : normalized;
+
+        projectKey = CollapseWhitespace(projectKey).ToLowerInvariant();
+        return string.IsNullOrWhiteSpace(projectKey)
+            ? NormalizeWindowTitle(title)
+            : projectKey;
     }
 
     private static string NormalizeWindowTitle(string title)
@@ -217,6 +324,11 @@ public sealed class SessionMatcher
         return string.IsNullOrWhiteSpace(normalized) || normalized == "(unknown)"
             ? "unknown"
             : normalized;
+    }
+
+    private static bool IsIdeProcess(string processName)
+    {
+        return IdeProcessNames.Contains(NormalizeProcessName(processName).ToLowerInvariant());
     }
 
     private static List<string> UpdateRecentNormalizedTitles(
