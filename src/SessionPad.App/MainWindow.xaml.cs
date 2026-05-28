@@ -15,7 +15,7 @@ namespace SessionPad.App;
 
 public partial class MainWindow : Window
 {
-    private static readonly TimeSpan AttachmentPollInterval = TimeSpan.FromMilliseconds(150);
+    private static readonly TimeSpan AttachmentPollInterval = TimeSpan.FromMilliseconds(60);
     private const int DragAttachThresholdPx = 48;
 
     private readonly HotkeyService _hotkeyService = new();
@@ -25,7 +25,7 @@ public partial class MainWindow : Window
     private readonly NoteStorageService _noteStorageService;
     private readonly SessionMatcher _sessionMatcher;
     private readonly FloatingNoteViewModel _viewModel;
-    private readonly DispatcherTimer _attachmentTimer = new();
+    private readonly DispatcherTimer _attachmentTimer = new(DispatcherPriority.Render);
     private Forms.NotifyIcon? _notifyIcon;
     private Forms.ContextMenuStrip? _trayMenu;
     private Drawing.Icon? _trayIcon;
