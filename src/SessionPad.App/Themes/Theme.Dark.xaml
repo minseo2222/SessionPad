@@ -3,6 +3,7 @@
     <SolidColorBrush x:Key="Surface.Base" Color="#15171C" />
     <SolidColorBrush x:Key="Surface.Raised" Color="#1C1F26" />
     <SolidColorBrush x:Key="Surface.Code" Color="#20242E" />
+    <SolidColorBrush x:Key="Surface.Capture" Color="#191B21" />
     <SolidColorBrush x:Key="Border.Hairline" Color="#2A2E37" />
     <SolidColorBrush x:Key="Border.Faint" Color="#24272F" />
     <SolidColorBrush x:Key="Text.Primary" Color="#E7E9ED" />
@@ -11,7 +12,7 @@
     <SolidColorBrush x:Key="Text.Code" Color="#C7CAD6" />
     <SolidColorBrush x:Key="Accent" Color="#7C8CF8" />
     <SolidColorBrush x:Key="Accent.OnAccent" Color="#0E1014" />
-    <SolidColorBrush x:Key="Spine.Neutral" Color="#3A3E47" />
+    <SolidColorBrush x:Key="Spine.Neutral" Color="#454A55" />
     <SolidColorBrush x:Key="Status" Color="#F59E0B" />
     <SolidColorBrush x:Key="Status.Success" Color="#34B58A" />
 </ResourceDictionary>

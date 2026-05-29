@@ -3,6 +3,7 @@
     <SolidColorBrush x:Key="Surface.Base" Color="#F6F5F1" />
     <SolidColorBrush x:Key="Surface.Raised" Color="#FFFFFF" />
     <SolidColorBrush x:Key="Surface.Code" Color="#F3F4F8" />
+    <SolidColorBrush x:Key="Surface.Capture" Color="#FFFFFF" />
     <SolidColorBrush x:Key="Border.Hairline" Color="#E7E5DF" />
     <SolidColorBrush x:Key="Border.Faint" Color="#EDEBE5" />
     <SolidColorBrush x:Key="Text.Primary" Color="#22262E" />

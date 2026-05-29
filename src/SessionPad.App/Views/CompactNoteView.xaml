@@ -349,7 +349,7 @@
 
                 <Grid Grid.Row="2"
                       Margin="0,0,0,12">
-                    <Border Background="{DynamicResource Surface.Raised}"
+                    <Border Background="{DynamicResource Surface.Capture}"
                             BorderBrush="{DynamicResource Border.Hairline}"
                             BorderThickness="1"
                             CornerRadius="8"
@@ -406,7 +406,7 @@
                         </Grid>
                     </Border>
 
-                    <Border Background="{DynamicResource Surface.Raised}"
+                    <Border Background="{DynamicResource Surface.Capture}"
                             BorderBrush="{DynamicResource Border.Hairline}"
                             BorderThickness="1"
                             CornerRadius="8"
@@ -463,7 +463,7 @@
                         </Grid>
                     </Border>
 
-                    <Border Background="{DynamicResource Surface.Raised}"
+                    <Border Background="{DynamicResource Surface.Capture}"
                             BorderBrush="{DynamicResource Border.Hairline}"
                             BorderThickness="1"
                             CornerRadius="8"
@@ -521,7 +521,7 @@
                         </Grid>
                     </Border>
 
-                    <Border Background="{DynamicResource Surface.Raised}"
+                    <Border Background="{DynamicResource Surface.Capture}"
                             BorderBrush="{DynamicResource Border.Hairline}"
                             BorderThickness="1"
                             CornerRadius="8"
@@ -954,10 +954,6 @@
                         </Grid.Style>
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <TextBlock Margin="0,0,0,8"
-                                           Foreground="{DynamicResource Status}"
-                                           TextWrapping="Wrap"
-                                           Text="{Binding LastCommandCopyStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Copy status: Ready, StringFormat={}Copy status: {0}}" />
                                 <ItemsControl ItemsSource="{Binding CommandItems}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
@@ -1271,12 +1267,43 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
+                            <TextBlock Margin="10,0,0,0"
+                                       Foreground="{DynamicResource Text.Faint}"
+                                       FontSize="11"
+                                       Text="{Binding CopyToastText, Mode=OneWay}">
+                                <TextBlock.Style>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ShowCopyToast}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Center">
                             <TextBlock Foreground="{DynamicResource Text.Faint}"
                                        FontSize="11">
+                                <Run Text="{Binding CurrentSessionDisplayName, Mode=OneWay}" />
+                                <Run Text=" &#x00B7; " />
+                                <TextBlock.Style>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCurrentSessionNamed}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Foreground="{DynamicResource Text.Faint}"
+                                       FontSize="11"
+                                       Visibility="Collapsed">
                                 <Run Text="{Binding CurrentSessionDisplayName, Mode=OneWay}" />
                                 <Run Text=" · " />
                                 <TextBlock.Style>
@@ -1297,10 +1324,8 @@
                                     VerticalAlignment="Center"
                                     Margin="0,0,6,0" />
                             <TextBlock Foreground="{DynamicResource Text.Faint}"
-                                       FontSize="11">
-                                <Run Text="attached to " />
-                                <Run Text="{Binding CurrentSessionKind, Mode=OneWay}" />
-                            </TextBlock>
+                                       FontSize="11"
+                                       Text="attached" />
                         </StackPanel>
                     </Grid>
                 </Border>

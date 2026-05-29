@@ -6,6 +6,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Windows.Input;
+using System.Windows.Threading;
 using SessionPad.App.Models;
 using SessionPad.App.Services;
 
@@ -19,6 +20,10 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private readonly StartupService _startupService = new();
     private readonly SettingsService _settingsService = new();
     private readonly ThemeService _themeService = new();
+    private readonly DispatcherTimer _copyToastTimer = new()
+    {
+        Interval = TimeSpan.FromMilliseconds(1500)
+    };
     private SessionSummary? _currentSession;
     private DateTimeOffset _createdAt = DateTimeOffset.UtcNow;
     private NotePanelState _panelState = NotePanelState.CompactNote;
@@ -39,10 +44,12 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string _localDataStatus = "Local data ready";
     private string _startupStatus = "Startup ready";
     private string _lastCommandCopyStatus = "Ready";
+    private string _copyToastText = string.Empty;
     private string _lastDragAttachStatus = "Drag near a window to attach.";
     private string _activeNoteTab = "Key";
     private bool _startOnLogin;
     private bool _isDarkTheme;
+    private bool _showCopyToast;
     private bool _isCurrentSessionPinned;
     private bool _isSettingsOpen;
     private string _newSessionName = string.Empty;
@@ -97,6 +104,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         SaveNoteEditCommand = new RelayCommand(SaveNoteEdit);
         CopyNoteCommand = new RelayCommand(CopyNote);
 
+        _copyToastTimer.Tick += OnCopyToastTimerTick;
         TodoItems.CollectionChanged += OnTodoItemsChanged;
         LoadDefaultNote();
     }
@@ -339,6 +347,18 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     {
         get => _lastCommandCopyStatus;
         private set => SetField(ref _lastCommandCopyStatus, value);
+    }
+
+    public bool ShowCopyToast
+    {
+        get => _showCopyToast;
+        private set => SetField(ref _showCopyToast, value);
+    }
+
+    public string CopyToastText
+    {
+        get => _copyToastText;
+        private set => SetField(ref _copyToastText, value);
     }
 
     public string LastDragAttachStatus
@@ -746,12 +766,12 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     {
         if (item is not CommandItemViewModel commandItem)
         {
-            LastCommandCopyStatus = "No command selected.";
+            ShowCopyFeedback("No command selected.");
             return;
         }
 
         var result = _clipboardService.CopyText(commandItem.Text);
-        LastCommandCopyStatus = result.Message;
+        ShowCopyFeedback(result.Message);
     }
 
     private void AddNote()
@@ -819,12 +839,28 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     {
         if (item is not NoteItemViewModel noteItem)
         {
-            LastCommandCopyStatus = "No note selected.";
+            ShowCopyFeedback("No note selected.");
             return;
         }
 
         var result = _clipboardService.CopyText(noteItem.Text);
-        LastCommandCopyStatus = result.Message;
+        ShowCopyFeedback(result.Message);
+    }
+
+    private void ShowCopyFeedback(string message)
+    {
+        LastCommandCopyStatus = message;
+        CopyToastText = message;
+        ShowCopyToast = true;
+
+        _copyToastTimer.Stop();
+        _copyToastTimer.Start();
+    }
+
+    private void OnCopyToastTimerTick(object? sender, EventArgs e)
+    {
+        _copyToastTimer.Stop();
+        ShowCopyToast = false;
     }
 
     private static bool AddTextItem(string input, Action<string> add)
