@@ -165,6 +165,8 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 
     public int OpenTodoCount => TodoItems.Count(item => !item.IsDone);
 
+    public string TodoSummary => $"{TodoItems.Count - OpenTodoCount} of {TodoItems.Count} done";
+
     public string ActiveNoteTab
     {
         get => _activeNoteTab;
@@ -909,6 +911,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         }
 
         OnPropertyChanged(nameof(OpenTodoCount));
+        OnPropertyChanged(nameof(TodoSummary));
     }
 
     private void OnTodoItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -916,6 +919,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         if (e.PropertyName == nameof(TodoItemViewModel.IsDone))
         {
             OnPropertyChanged(nameof(OpenTodoCount));
+            OnPropertyChanged(nameof(TodoSummary));
             SaveNote();
         }
     }

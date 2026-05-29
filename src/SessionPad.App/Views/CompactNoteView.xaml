@@ -6,6 +6,56 @@
              mc:Ignorable="d"
              d:DesignHeight="520"
              d:DesignWidth="340">
+    <UserControl.Resources>
+        <Style x:Key="ItemActionButtonStyle"
+               TargetType="{x:Type Button}">
+            <Setter Property="Width" Value="23" />
+            <Setter Property="Height" Value="23" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="{DynamicResource Text.Faint}" />
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource Surface.Raised}" />
+                    <Setter Property="Foreground" Value="{DynamicResource Text.Primary}" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Opacity" Value="0.78" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="DeleteItemActionButtonStyle"
+               TargetType="{x:Type Button}"
+               BasedOn="{StaticResource ItemActionButtonStyle}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#C0453F" />
+                    <Setter Property="Foreground" Value="#FFFFFF" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
     <Border Background="{DynamicResource Surface.Base}"
             BorderBrush="{DynamicResource Border.Hairline}"
             BorderThickness="1"
@@ -714,41 +764,51 @@
                             <ItemsControl ItemsSource="{Binding PinnedItems}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Grid Margin="0,0,0,6">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <Border Padding="8,6"
-                                                    Background="{DynamicResource Surface.Raised}"
-                                                    BorderBrush="{DynamicResource Border.Hairline}"
-                                                    BorderThickness="1"
-                                                    CornerRadius="999">
+                                        <Border x:Name="KeyCard"
+                                                Margin="0,0,0,6"
+                                                Padding="9,11"
+                                                Background="{DynamicResource Surface.Raised}"
+                                                BorderBrush="{DynamicResource Border.Faint}"
+                                                BorderThickness="1"
+                                                CornerRadius="7">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto" />
                                                         <ColumnDefinition Width="*" />
                                                     </Grid.ColumnDefinitions>
-                                                    <Border Width="7"
-                                                            Height="7"
+                                                    <Border Width="4"
+                                                            Height="18"
                                                             Background="{DynamicResource Accent}"
-                                                            CornerRadius="4"
+                                                            CornerRadius="2"
                                                             VerticalAlignment="Center" />
                                                     <TextBlock Grid.Column="1"
-                                                               Margin="8,0,0,0"
+                                                               Margin="9,0,8,0"
                                                                Text="{Binding Text}"
-                                                               TextWrapping="Wrap"
+                                                               TextTrimming="CharacterEllipsis"
                                                                Foreground="{DynamicResource Text.Primary}"
+                                                               FontSize="13"
                                                                VerticalAlignment="Center" />
                                                 </Grid>
-                                            </Border>
-                                            <Button Grid.Column="1"
+                                                <Button x:Name="DeletePinnedButton"
+                                                        Grid.Column="1"
+                                                        Style="{StaticResource DeleteItemActionButtonStyle}"
                                                     Command="{Binding DataContext.DeletePinnedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"
-                                                    Content="Delete"
-                                                    Margin="8,0,0,0"
-                                                    Padding="6,2" />
-                                        </Grid>
+                                                        Content="&#xE74D;"
+                                                        ToolTip="Delete" />
+                                            </Grid>
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <Trigger SourceName="KeyCard" Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="KeyCard" Property="BorderBrush" Value="{DynamicResource Border.Hairline}" />
+                                                <Setter TargetName="DeletePinnedButton" Property="Opacity" Value="1" />
+                                            </Trigger>
+                                        </DataTemplate.Triggers>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -774,38 +834,85 @@
                             <ItemsControl ItemsSource="{Binding TodoItems}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Grid Margin="0,0,0,6">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <CheckBox IsChecked="{Binding IsDone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                      VerticalAlignment="Center" />
-                                            <TextBlock Grid.Column="1"
-                                                       Text="{Binding Text}"
-                                                       TextWrapping="Wrap"
-                                                       VerticalAlignment="Center"
-                                                       Margin="8,0,0,0">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="{x:Type TextBlock}">
-                                                        <Setter Property="Foreground" Value="{DynamicResource Text.Primary}" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsDone}" Value="True">
-                                                                <Setter Property="TextDecorations" Value="Strikethrough" />
-                                                                <Setter Property="Foreground" Value="{DynamicResource Text.Faint}" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                            <Button Grid.Column="2"
-                                                    Command="{Binding DataContext.DeleteTodoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding}"
-                                                    Content="Delete"
-                                                    Margin="8,0,0,0"
-                                                    Padding="6,2" />
-                                        </Grid>
+                                        <Border x:Name="TodoRow"
+                                                Margin="0,0,0,6"
+                                                Padding="8,9"
+                                                Background="Transparent"
+                                                CornerRadius="7">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox IsChecked="{Binding IsDone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          Width="22"
+                                                          Height="22"
+                                                          VerticalAlignment="Center"
+                                                          ToolTip="Toggle todo">
+                                                    <CheckBox.Template>
+                                                        <ControlTemplate TargetType="{x:Type CheckBox}">
+                                                            <Grid Width="22"
+                                                                  Height="22"
+                                                                  Background="Transparent">
+                                                                <Ellipse x:Name="TodoCircle"
+                                                                         Width="17"
+                                                                         Height="17"
+                                                                         Stroke="{DynamicResource Text.Muted}"
+                                                                         StrokeThickness="1.6"
+                                                                         Fill="Transparent"
+                                                                         HorizontalAlignment="Center"
+                                                                         VerticalAlignment="Center" />
+                                                                <Path x:Name="TodoCheck"
+                                                                      Data="M 5 11 L 9 15 L 16 7"
+                                                                      Stroke="{DynamicResource Accent}"
+                                                                      StrokeThickness="2"
+                                                                      StrokeStartLineCap="Round"
+                                                                      StrokeEndLineCap="Round"
+                                                                      Visibility="Collapsed" />
+                                                            </Grid>
+                                                            <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsChecked" Value="True">
+                                                                    <Setter TargetName="TodoCircle" Property="Stroke" Value="{DynamicResource Accent}" />
+                                                                    <Setter TargetName="TodoCheck" Property="Visibility" Value="Visible" />
+                                                                </Trigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </CheckBox.Template>
+                                                </CheckBox>
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding Text}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           VerticalAlignment="Center"
+                                                           FontSize="13"
+                                                           Margin="8,0,8,0">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="{x:Type TextBlock}">
+                                                            <Setter Property="Foreground" Value="{DynamicResource Text.Primary}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDone}" Value="True">
+                                                                    <Setter Property="TextDecorations" Value="Strikethrough" />
+                                                                    <Setter Property="Foreground" Value="{DynamicResource Text.Faint}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <Button x:Name="DeleteTodoButton"
+                                                        Grid.Column="2"
+                                                        Style="{StaticResource DeleteItemActionButtonStyle}"
+                                                        Command="{Binding DataContext.DeleteTodoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="&#xE74D;"
+                                                        ToolTip="Delete" />
+                                            </Grid>
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <Trigger SourceName="TodoRow" Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="TodoRow" Property="Background" Value="{DynamicResource Surface.Raised}" />
+                                                <Setter TargetName="DeleteTodoButton" Property="Opacity" Value="1" />
+                                            </Trigger>
+                                        </DataTemplate.Triggers>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -836,36 +943,57 @@
                                 <ItemsControl ItemsSource="{Binding CommandItems}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Grid Margin="0,0,0,8">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <Border Padding="8"
-                                                        Background="{DynamicResource Surface.Raised}"
-                                                        BorderBrush="{DynamicResource Border.Hairline}"
-                                                        BorderThickness="1"
-                                                        CornerRadius="8">
-                                                    <TextBlock Text="{Binding Text}"
-                                                               TextWrapping="Wrap"
+                                            <Border x:Name="CommandCard"
+                                                    Margin="0,0,0,6"
+                                                    Padding="9,9,9,11"
+                                                    Background="{DynamicResource Surface.Code}"
+                                                    BorderBrush="{DynamicResource Border.Faint}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="7">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Width="3"
+                                                            Background="{DynamicResource Accent}"
+                                                            CornerRadius="3"
+                                                            Opacity="0.6"
+                                                            Margin="0,0,9,0" />
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding Text}"
+                                                               TextTrimming="CharacterEllipsis"
                                                                FontFamily="Consolas"
-                                                               Foreground="{DynamicResource Text.Primary}"
-                                                               VerticalAlignment="Center" />
-                                                </Border>
-                                                <Button Grid.Column="1"
-                                                        Command="{Binding DataContext.CopyCommandItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                        CommandParameter="{Binding}"
-                                                        Content="Copy"
-                                                        Margin="8,0,0,0"
-                                                        Padding="6,2" />
-                                                <Button Grid.Column="2"
-                                                        Command="{Binding DataContext.DeleteCommandItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                        CommandParameter="{Binding}"
-                                                        Content="Delete"
-                                                        Margin="8,0,0,0"
-                                                        Padding="6,2" />
-                                            </Grid>
+                                                               FontSize="12"
+                                                               Foreground="{DynamicResource Text.Code}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="0,0,8,0" />
+                                                    <Button x:Name="CopyCommandButton"
+                                                            Grid.Column="2"
+                                                            Style="{StaticResource ItemActionButtonStyle}"
+                                                            Command="{Binding DataContext.CopyCommandItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            Content="&#xE8C8;"
+                                                            ToolTip="Copy" />
+                                                    <Button x:Name="DeleteCommandButton"
+                                                            Grid.Column="3"
+                                                            Style="{StaticResource DeleteItemActionButtonStyle}"
+                                                            Command="{Binding DataContext.DeleteCommandItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            Content="&#xE74D;"
+                                                            ToolTip="Delete"
+                                                            Margin="3,0,0,0" />
+                                                </Grid>
+                                            </Border>
+                                            <DataTemplate.Triggers>
+                                                <Trigger SourceName="CommandCard" Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="CommandCard" Property="BorderBrush" Value="{DynamicResource Border.Hairline}" />
+                                                    <Setter TargetName="CopyCommandButton" Property="Opacity" Value="1" />
+                                                    <Setter TargetName="DeleteCommandButton" Property="Opacity" Value="1" />
+                                                </Trigger>
+                                            </DataTemplate.Triggers>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -892,28 +1020,42 @@
                             <ItemsControl ItemsSource="{Binding NoteItems}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Grid Margin="0,0,0,8">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <Border Padding="10"
-                                                    Background="{DynamicResource Surface.Raised}"
-                                                    BorderBrush="{DynamicResource Border.Hairline}"
-                                                    BorderThickness="1"
-                                                    CornerRadius="8">
+                                        <Border x:Name="NoteCard"
+                                                Margin="0,0,0,6"
+                                                Padding="10,11"
+                                                Background="{DynamicResource Surface.Raised}"
+                                                BorderBrush="{DynamicResource Border.Faint}"
+                                                BorderThickness="1"
+                                                CornerRadius="7">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
                                                 <TextBlock Text="{Binding Text}"
                                                            TextWrapping="Wrap"
-                                                           Foreground="{DynamicResource Text.Muted}"
-                                                           VerticalAlignment="Center" />
-                                            </Border>
-                                            <Button Grid.Column="1"
-                                                    Command="{Binding DataContext.DeleteNoteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding}"
-                                                    Content="Delete"
-                                                    Margin="8,0,0,0"
-                                                    Padding="6,2" />
-                                        </Grid>
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Foreground="{DynamicResource Text.Primary}"
+                                                           FontSize="13"
+                                                           MaxHeight="56"
+                                                           VerticalAlignment="Top"
+                                                           Margin="0,0,8,0" />
+                                                <Button x:Name="DeleteNoteButton"
+                                                        Grid.Column="1"
+                                                        Style="{StaticResource DeleteItemActionButtonStyle}"
+                                                        Command="{Binding DataContext.DeleteNoteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="&#xE74D;"
+                                                        ToolTip="Delete"
+                                                        VerticalAlignment="Top" />
+                                            </Grid>
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <Trigger SourceName="NoteCard" Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="NoteCard" Property="BorderBrush" Value="{DynamicResource Border.Hairline}" />
+                                                <Setter TargetName="DeleteNoteButton" Property="Opacity" Value="1" />
+                                            </Trigger>
+                                        </DataTemplate.Triggers>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -927,6 +1069,66 @@
                         BorderBrush="{DynamicResource Border.Hairline}"
                         BorderThickness="0,1,0,0">
                     <Grid>
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center">
+                            <TextBlock Foreground="{DynamicResource Text.Faint}"
+                                       FontSize="11"
+                                       Text="{Binding PinnedItems.Count, Mode=OneWay, StringFormat={}{0} key details}">
+                                <TextBlock.Style>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsKeyTabActive}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Foreground="{DynamicResource Text.Faint}"
+                                       FontSize="11"
+                                       Text="{Binding TodoSummary, Mode=OneWay}">
+                                <TextBlock.Style>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsTodoTabActive}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Foreground="{DynamicResource Text.Faint}"
+                                       FontSize="11"
+                                       Text="{Binding CommandItems.Count, Mode=OneWay, StringFormat={}{0} commands}">
+                                <TextBlock.Style>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCommandsTabActive}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Foreground="{DynamicResource Text.Faint}"
+                                       FontSize="11"
+                                       Text="{Binding NoteItems.Count, Mode=OneWay, StringFormat={}{0} notes}">
+                                <TextBlock.Style>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsNotesTabActive}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
                         <StackPanel Orientation="Horizontal"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Center">
