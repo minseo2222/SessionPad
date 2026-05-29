@@ -93,6 +93,9 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         CopyCommandItemCommand = new RelayCommand(CopyCommandItem);
         AddNoteCommand = new RelayCommand(AddNote);
         DeleteNoteCommand = new RelayCommand(DeleteNote);
+        ToggleNoteExpandCommand = new RelayCommand(ToggleNoteExpand);
+        SaveNoteEditCommand = new RelayCommand(SaveNoteEdit);
+        CopyNoteCommand = new RelayCommand(CopyNote);
 
         TodoItems.CollectionChanged += OnTodoItemsChanged;
         LoadDefaultNote();
@@ -133,6 +136,12 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public ICommand AddNoteCommand { get; }
 
     public ICommand DeleteNoteCommand { get; }
+
+    public ICommand ToggleNoteExpandCommand { get; }
+
+    public ICommand SaveNoteEditCommand { get; }
+
+    public ICommand CopyNoteCommand { get; }
 
     public ObservableCollection<PinnedItemViewModel> PinnedItems { get; } = new();
 
@@ -760,6 +769,62 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         {
             SaveNote();
         }
+    }
+
+    private void ToggleNoteExpand(object? item)
+    {
+        if (item is not NoteItemViewModel noteItem)
+        {
+            return;
+        }
+
+        var shouldExpand = !noteItem.IsExpanded;
+        foreach (var existingItem in NoteItems)
+        {
+            if (!ReferenceEquals(existingItem, noteItem))
+            {
+                existingItem.IsExpanded = false;
+            }
+        }
+
+        if (shouldExpand)
+        {
+            noteItem.EditText = noteItem.Text;
+        }
+
+        noteItem.IsExpanded = shouldExpand;
+    }
+
+    private void SaveNoteEdit(object? item)
+    {
+        if (item is not NoteItemViewModel noteItem)
+        {
+            return;
+        }
+
+        var text = (noteItem.EditText ?? string.Empty).Trim();
+        if (text.Length == 0)
+        {
+            noteItem.EditText = noteItem.Text;
+            return;
+        }
+
+        noteItem.Text = text;
+        noteItem.EditText = text;
+        noteItem.IsExpanded = false;
+        SaveNote();
+    }
+
+    private void CopyNote(object? item)
+    {
+        if (item is not NoteItemViewModel noteItem)
+        {
+            LastCommandCopyStatus = "No note selected.";
+            return;
+        }
+
+        var result = _clipboardService.CopyText(noteItem.Text);
+        LastCommandCopyStatus = result.Message;
     }
 
     private static bool AddTextItem(string input, Action<string> add)

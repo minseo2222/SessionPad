@@ -67,15 +67,70 @@ public sealed class CommandItemViewModel
     public string Text { get; }
 }
 
-public sealed class NoteItemViewModel
+public sealed class NoteItemViewModel : INotifyPropertyChanged
 {
+    private string _text;
+    private bool _isExpanded;
+    private string _editText = string.Empty;
+
     public NoteItemViewModel(string id, string text)
     {
         Id = id;
-        Text = text;
+        _text = text;
+        _editText = text;
     }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     public string Id { get; }
 
-    public string Text { get; }
+    public string Text
+    {
+        get => _text;
+        set
+        {
+            if (_text == value)
+            {
+                return;
+            }
+
+            _text = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsExpanded
+    {
+        get => _isExpanded;
+        set
+        {
+            if (_isExpanded == value)
+            {
+                return;
+            }
+
+            _isExpanded = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string EditText
+    {
+        get => _editText;
+        set
+        {
+            if (_editText == value)
+            {
+                return;
+            }
+
+            _editText = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 }
