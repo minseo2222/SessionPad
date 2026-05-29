@@ -261,6 +261,8 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool IsCurrentSessionNamed => _currentSession?.IsUserNamed == true;
+
     public string LocalDataPath => _localDataService.GetAppDataDirectory();
 
     public string LocalDataStatus
@@ -560,6 +562,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
             CurrentSessionDisplayName = name;
             CurrentSessionStatus = "Renamed";
             NewSessionName = string.Empty;
+            OnPropertyChanged(nameof(IsCurrentSessionNamed));
         }
         catch (Exception ex) when (ex is IOException
             or UnauthorizedAccessException
@@ -861,6 +864,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         CurrentNormalizedWindowTitle = null;
         CurrentSessionMatchKey = "default";
         SetCurrentSessionPinnedState(false);
+        OnPropertyChanged(nameof(IsCurrentSessionNamed));
     }
 
     private void ApplyWindowSessionContext(SessionSummary session, string matchKey, string status)
@@ -875,6 +879,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         CurrentNormalizedWindowTitle = session.Identity.NormalizedWindowTitle;
         CurrentSessionMatchKey = matchKey;
         SetCurrentSessionPinnedState(session.IsPinned);
+        OnPropertyChanged(nameof(IsCurrentSessionNamed));
     }
 
     private void ClearNewItemInputs()

@@ -6,672 +6,960 @@
              mc:Ignorable="d"
              d:DesignHeight="520"
              d:DesignWidth="340">
-    <Border Padding="12"
-            Background="{DynamicResource Surface.Base}"
+    <Border Background="{DynamicResource Surface.Base}"
             BorderBrush="{DynamicResource Border.Hairline}"
             BorderThickness="1"
-            CornerRadius="8">
+            CornerRadius="11">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="12"
+                              ShadowDepth="1"
+                              Opacity="0.10"
+                              Color="#282820" />
+        </Border.Effect>
+
         <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="4" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-            <Grid Grid.Row="0"
-                  Margin="0,0,0,12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+            <Border Grid.Column="0"
+                    Background="{DynamicResource Spine.Neutral}">
+                <Border.Style>
+                    <Style TargetType="{x:Type Border}">
+                        <Setter Property="Background" Value="{DynamicResource Spine.Neutral}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsCurrentSessionNamed}" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource Accent}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsCurrentSessionPinned}" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource Accent}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+            </Border>
 
-                <Border Grid.Column="0"
-                        Margin="0,0,8,0"
-                        Padding="7,4"
-                        Background="{DynamicResource Surface.Raised}"
-                        BorderBrush="{DynamicResource Border.Hairline}"
-                        BorderThickness="1"
-                        CornerRadius="8"
-                        Cursor="SizeAll"
-                        ToolTip="Drag near a window to attach"
-                        MouseLeftButtonDown="OnDragAttachMouseLeftButtonDown">
-                    <TextBlock Text="Drag"
-                               FontSize="11"
+            <Grid Grid.Column="1"
+                  Margin="11,11,13,10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0"
+                      Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0"
+                            Padding="0,2"
+                            Cursor="SizeAll"
+                            ToolTip="Drag near a window to attach"
+                            MouseLeftButtonDown="OnDragAttachMouseLeftButtonDown">
+                        <TextBlock Text="Drag"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource Text.Faint}"
+                                   VerticalAlignment="Center" />
+                    </Border>
+
+                    <TextBlock Grid.Column="1"
+                               Margin="10,0,0,0"
+                               Text="SESSIONPAD"
+                               FontSize="10.5"
+                               FontWeight="Medium"
                                Foreground="{DynamicResource Text.Muted}"
                                VerticalAlignment="Center" />
-                </Border>
 
-                <TextBlock Grid.Column="1"
-                           Text="SessionPad"
-                           FontSize="14"
-                           FontWeight="Medium"
-                           Foreground="{DynamicResource Text.Primary}"
-                           VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="3"
+                               Text="●"
+                               FontSize="14"
+                               Foreground="{DynamicResource Accent}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0">
+                        <TextBlock.Style>
+                            <Style TargetType="{x:Type TextBlock}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCurrentSessionPinned}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
 
-                <Border Grid.Column="2"
-                        Margin="8,0"
-                        Padding="8,4"
-                        Background="{DynamicResource Surface.Raised}"
+                    <Button Grid.Column="4"
+                            Command="{Binding ToggleSettingsCommand}"
+                            Content="&#x2699;"
+                            Width="25"
+                            Height="25"
+                            Padding="0"
+                            Foreground="{DynamicResource Text.Faint}"
+                            ToolTip="Settings" />
+                    <Button Grid.Column="5"
+                            Command="{Binding CollapseCommand}"
+                            Content="&#x2212;"
+                            Width="25"
+                            Height="25"
+                            Padding="0"
+                            Margin="5,0,0,0"
+                            Foreground="{DynamicResource Text.Faint}"
+                            ToolTip="Collapse" />
+                </Grid>
+
+                <Border Grid.Row="1"
+                        Margin="0,0,0,12"
                         BorderBrush="{DynamicResource Border.Hairline}"
-                        BorderThickness="1"
-                        CornerRadius="999"
-                        VerticalAlignment="Center">
-                    <TextBlock Text="{Binding CurrentSessionDisplayName, Mode=OneWay, TargetNullValue=Default local note, FallbackValue=Default local note}"
-                               FontSize="11"
-                               Foreground="{DynamicResource Text.Muted}"
-                               TextTrimming="CharacterEllipsis" />
+                        BorderThickness="0,0,0,1">
+                    <Grid Margin="0,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="17" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="17" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="17" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="2" />
+                            </Grid.RowDefinitions>
+                            <Button Content="Key"
+                                    Command="{Binding SelectNoteTabCommand}"
+                                    CommandParameter="Key"
+                                    Padding="7,1"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    FontSize="12.5">
+                                <Button.Style>
+                                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+                                        <Setter Property="Foreground" Value="{DynamicResource Text.Muted}" />
+                                        <Setter Property="FontWeight" Value="Normal" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="BorderThickness" Value="0" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsKeyTabActive}" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource Text.Primary}" />
+                                                <Setter Property="FontWeight" Value="Medium" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Border Grid.Row="1" Background="{DynamicResource Accent}">
+                                <Border.Style>
+                                    <Style TargetType="{x:Type Border}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsKeyTabActive}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                            </Border>
+                        </Grid>
+
+                        <Grid Grid.Column="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="2" />
+                            </Grid.RowDefinitions>
+                            <Button Content="Todo"
+                                    Command="{Binding SelectNoteTabCommand}"
+                                    CommandParameter="Todo"
+                                    Padding="7,1"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    FontSize="12.5">
+                                <Button.Style>
+                                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+                                        <Setter Property="Foreground" Value="{DynamicResource Text.Muted}" />
+                                        <Setter Property="FontWeight" Value="Normal" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="BorderThickness" Value="0" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsTodoTabActive}" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource Text.Primary}" />
+                                                <Setter Property="FontWeight" Value="Medium" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Border Grid.Row="1" Background="{DynamicResource Accent}">
+                                <Border.Style>
+                                    <Style TargetType="{x:Type Border}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsTodoTabActive}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                            </Border>
+                        </Grid>
+
+                        <Grid Grid.Column="4">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="2" />
+                            </Grid.RowDefinitions>
+                            <Button Content="Commands"
+                                    Command="{Binding SelectNoteTabCommand}"
+                                    CommandParameter="Commands"
+                                    Padding="7,1"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    FontSize="12.5">
+                                <Button.Style>
+                                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+                                        <Setter Property="Foreground" Value="{DynamicResource Text.Muted}" />
+                                        <Setter Property="FontWeight" Value="Normal" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="BorderThickness" Value="0" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCommandsTabActive}" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource Text.Primary}" />
+                                                <Setter Property="FontWeight" Value="Medium" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Border Grid.Row="1" Background="{DynamicResource Accent}">
+                                <Border.Style>
+                                    <Style TargetType="{x:Type Border}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCommandsTabActive}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                            </Border>
+                        </Grid>
+
+                        <Grid Grid.Column="6">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="2" />
+                            </Grid.RowDefinitions>
+                            <Button Content="Notes"
+                                    Command="{Binding SelectNoteTabCommand}"
+                                    CommandParameter="Notes"
+                                    Padding="7,1"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    FontSize="12.5">
+                                <Button.Style>
+                                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+                                        <Setter Property="Foreground" Value="{DynamicResource Text.Muted}" />
+                                        <Setter Property="FontWeight" Value="Normal" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="BorderThickness" Value="0" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsNotesTabActive}" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource Text.Primary}" />
+                                                <Setter Property="FontWeight" Value="Medium" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Border Grid.Row="1" Background="{DynamicResource Accent}">
+                                <Border.Style>
+                                    <Style TargetType="{x:Type Border}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsNotesTabActive}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                            </Border>
+                        </Grid>
+                    </Grid>
                 </Border>
 
-                <Button Grid.Column="3"
-                        Command="{Binding ToggleSettingsCommand}"
-                        Content="&#x2699;"
-                        MinWidth="32"
-                        Padding="8,4"
-                        ToolTip="Settings" />
-                <Button Grid.Column="4"
-                        Command="{Binding CollapseCommand}"
-                        Content="Collapse"
-                        MinWidth="72"
-                        Padding="8,4"
-                        Margin="6,0,0,0"
-                        HorizontalAlignment="Right" />
-            </Grid>
-
-            <Border Grid.Row="1"
-                    Margin="0,0,0,12"
-                    Padding="8"
-                    Background="{DynamicResource Surface.Raised}"
-                    BorderBrush="{DynamicResource Border.Hairline}"
-                    BorderThickness="1"
-                    CornerRadius="8">
-                <StackPanel>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBox Text="{Binding NewSessionName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                 MinHeight="36"
-                                 VerticalContentAlignment="Center" />
-                        <Button Grid.Column="1"
-                                Margin="8,0,0,0"
-                                Content="Rename Session"
-                                Command="{Binding RenameSessionCommand}"
-                                Padding="8,4"
-                                VerticalAlignment="Center" />
-                    </Grid>
-                    <CheckBox Margin="0,8,0,0"
-                              Content="Pin to this app (ignore window title)"
-                              IsChecked="{Binding IsCurrentSessionPinned, Mode=TwoWay}" />
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Row="2"
-                    Margin="0,0,0,12"
-                    Padding="3"
-                    Background="{DynamicResource Surface.Raised}"
-                    BorderBrush="{DynamicResource Border.Hairline}"
-                    BorderThickness="1"
-                    CornerRadius="9">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0"
-                            Content="Key"
-                            Command="{Binding SelectNoteTabCommand}"
-                            CommandParameter="Key"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Foreground="{DynamicResource Text.Muted}"
-                            Padding="8,6">
-                        <Button.Style>
-                            <Style TargetType="{x:Type Button}"
-                                   BasedOn="{StaticResource {x:Type Button}}">
-                                <Setter Property="Background" Value="Transparent" />
-                                <Setter Property="BorderThickness" Value="0" />
-                                <Setter Property="Foreground" Value="{DynamicResource Text.Muted}" />
+                <Grid Grid.Row="2"
+                      Margin="0,0,0,12">
+                    <Border Background="{DynamicResource Surface.Raised}"
+                            BorderBrush="{DynamicResource Border.Hairline}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="3,5,3,11">
+                        <Border.Style>
+                            <Style TargetType="{x:Type Border}">
+                                <Setter Property="Visibility" Value="Collapsed" />
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsKeyTabActive}" Value="True">
-                                        <Setter Property="Background" Value="{DynamicResource Accent}" />
-                                        <Setter Property="Foreground" Value="{DynamicResource Accent.OnAccent}" />
-                                    </DataTrigger>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsSettingsOpen}" Value="False" />
+                                            <Condition Binding="{Binding IsKeyTabActive}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </MultiDataTrigger>
                                 </Style.Triggers>
                             </Style>
-                        </Button.Style>
-                    </Button>
-                    <Button Grid.Column="1"
-                            Margin="3,0,0,0"
-                            Content="Todo"
-                            Command="{Binding SelectNoteTabCommand}"
-                            CommandParameter="Todo"
-                            Padding="8,6">
-                        <Button.Style>
-                            <Style TargetType="{x:Type Button}"
-                                   BasedOn="{StaticResource {x:Type Button}}">
-                                <Setter Property="Background" Value="Transparent" />
-                                <Setter Property="BorderThickness" Value="0" />
-                                <Setter Property="Foreground" Value="{DynamicResource Text.Muted}" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsTodoTabActive}" Value="True">
-                                        <Setter Property="Background" Value="{DynamicResource Accent}" />
-                                        <Setter Property="Foreground" Value="{DynamicResource Accent.OnAccent}" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                    <Button Grid.Column="2"
-                            Margin="3,0,0,0"
-                            Content="Commands"
-                            Command="{Binding SelectNoteTabCommand}"
-                            CommandParameter="Commands"
-                            Padding="8,6">
-                        <Button.Style>
-                            <Style TargetType="{x:Type Button}"
-                                   BasedOn="{StaticResource {x:Type Button}}">
-                                <Setter Property="Background" Value="Transparent" />
-                                <Setter Property="BorderThickness" Value="0" />
-                                <Setter Property="Foreground" Value="{DynamicResource Text.Muted}" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsCommandsTabActive}" Value="True">
-                                        <Setter Property="Background" Value="{DynamicResource Accent}" />
-                                        <Setter Property="Foreground" Value="{DynamicResource Accent.OnAccent}" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                    <Button Grid.Column="3"
-                            Margin="3,0,0,0"
-                            Content="Notes"
-                            Command="{Binding SelectNoteTabCommand}"
-                            CommandParameter="Notes"
-                            Padding="8,6">
-                        <Button.Style>
-                            <Style TargetType="{x:Type Button}"
-                                   BasedOn="{StaticResource {x:Type Button}}">
-                                <Setter Property="Background" Value="Transparent" />
-                                <Setter Property="BorderThickness" Value="0" />
-                                <Setter Property="Foreground" Value="{DynamicResource Text.Muted}" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsNotesTabActive}" Value="True">
-                                        <Setter Property="Background" Value="{DynamicResource Accent}" />
-                                        <Setter Property="Foreground" Value="{DynamicResource Accent.OnAccent}" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                </Grid>
-            </Border>
-
-            <Grid Grid.Row="3">
-                <Grid>
-                    <Grid.Style>
-                        <Style TargetType="{x:Type Grid}">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsSettingsOpen}" Value="True">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Grid.Style>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <TextBlock Text="Local Data"
-                                       FontWeight="Medium"
-                                       Foreground="{DynamicResource Text.Primary}" />
-                            <TextBlock Margin="0,6,0,0"
-                                       Foreground="{DynamicResource Text.Muted}"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding LocalDataPath, Mode=OneWay, FallbackValue=Storage path unavailable, StringFormat={}Path: {0}}" />
-                            <TextBlock Margin="0,6,0,0"
+                        </Border.Style>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Button Command="{Binding AddPinnedCommand}"
+                                    Content="+"
+                                    Width="24"
+                                    Height="24"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Foreground="{DynamicResource Accent}"
+                                    FontSize="15"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,4,0" />
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding NewPinnedText, UpdateSourceTrigger=PropertyChanged}"
+                                     Tag="Save a key detail…"
+                                     MinHeight="36"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     FontSize="13"
+                                     VerticalContentAlignment="Center">
+                                <TextBox.InputBindings>
+                                    <KeyBinding Key="Return" Command="{Binding AddPinnedCommand}" />
+                                </TextBox.InputBindings>
+                            </TextBox>
+                            <TextBlock Grid.Column="2"
+                                       Text="↵"
+                                       FontSize="10"
                                        Foreground="{DynamicResource Text.Faint}"
-                                       TextWrapping="Wrap"
-                                       Text="SessionPad stores user-entered notes locally. It does not use cloud sync, login, telemetry, screen scraping, or terminal scraping." />
-                            <DockPanel Margin="0,8,0,0">
-                                <Button DockPanel.Dock="Left"
-                                        Command="{Binding OpenLocalDataFolderCommand}"
-                                        Content="Open Folder"
-                                        MinWidth="88"
-                                        Padding="8,4" />
-                                <Button DockPanel.Dock="Right"
-                                        Command="{Binding DeleteLocalDataCommand}"
-                                        Content="Delete All Local Data"
-                                        MinWidth="132"
-                                        Padding="8,4"
-                                        Margin="8,0,0,0" />
-                            </DockPanel>
-                            <TextBlock Margin="0,8,0,0"
-                                       Foreground="{DynamicResource Status}"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding LocalDataStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Local data ready, StringFormat={}Status: {0}}" />
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,6,0" />
+                        </Grid>
+                    </Border>
 
-                            <CheckBox Margin="0,12,0,0"
-                                      Content="Start with Windows"
-                                      IsChecked="{Binding StartOnLogin, Mode=TwoWay}" />
-                            <TextBlock Margin="0,6,0,0"
-                                       Foreground="{DynamicResource Status}"
-                                       TextWrapping="Wrap"
-                                       Text="{Binding StartupStatus, Mode=OneWay, FallbackValue=Startup ready, StringFormat={}Startup: {0}}" />
-                            <CheckBox Margin="0,8,0,0"
-                                      Content="Dark theme"
-                                      IsChecked="{Binding IsDarkTheme, Mode=TwoWay}" />
+                    <Border Background="{DynamicResource Surface.Raised}"
+                            BorderBrush="{DynamicResource Border.Hairline}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="3,5,3,11">
+                        <Border.Style>
+                            <Style TargetType="{x:Type Border}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsSettingsOpen}" Value="False" />
+                                            <Condition Binding="{Binding IsTodoTabActive}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Button Command="{Binding AddTodoCommand}"
+                                    Content="+"
+                                    Width="24"
+                                    Height="24"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Foreground="{DynamicResource Accent}"
+                                    FontSize="15"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,4,0" />
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding NewTodoText, UpdateSourceTrigger=PropertyChanged}"
+                                     Tag="Capture a todo…"
+                                     MinHeight="36"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     FontSize="13"
+                                     VerticalContentAlignment="Center">
+                                <TextBox.InputBindings>
+                                    <KeyBinding Key="Return" Command="{Binding AddTodoCommand}" />
+                                </TextBox.InputBindings>
+                            </TextBox>
+                            <TextBlock Grid.Column="2"
+                                       Text="↵"
+                                       FontSize="10"
+                                       Foreground="{DynamicResource Text.Faint}"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,6,0" />
+                        </Grid>
+                    </Border>
 
-                            <Expander Margin="0,12,0,0"
-                                      Foreground="{DynamicResource Text.Primary}">
-                                <Expander.Header>
-                                    <TextBlock Text="Developer info"
-                                               FontWeight="Medium"
-                                               Foreground="{DynamicResource Text.Primary}" />
-                                </Expander.Header>
-                                <StackPanel Margin="0,8,0,0">
-                                    <TextBlock Text="Current Session"
-                                               FontWeight="Medium"
-                                               Foreground="{DynamicResource Text.Primary}" />
-                                    <TextBlock Margin="0,6,0,0"
-                                               Foreground="{DynamicResource Text.Muted}"
-                                               TextWrapping="Wrap"
-                                               Text="{Binding CurrentSessionDisplayName, Mode=OneWay, TargetNullValue=(none), FallbackValue=Name: (none), StringFormat={}Name: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               Text="{Binding CurrentSessionKind, Mode=OneWay, TargetNullValue=(none), FallbackValue=Type: (none), StringFormat={}Type: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               TextWrapping="Wrap"
-                                               Text="{Binding CurrentSessionId, Mode=OneWay, TargetNullValue=(none), FallbackValue=Session ID: (none), StringFormat={}Session ID: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               TextWrapping="Wrap"
-                                               Text="{Binding CurrentNormalizedWindowTitle, Mode=OneWay, TargetNullValue=(none), FallbackValue=Normalized title: (none), StringFormat={}Normalized title: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               TextWrapping="Wrap"
-                                               Text="{Binding CurrentSessionMatchKey, Mode=OneWay, TargetNullValue=(none), FallbackValue=Match key: (none), StringFormat={}Match key: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               TextWrapping="Wrap"
-                                               Text="{Binding CurrentSessionNoteFile, Mode=OneWay, TargetNullValue=(none), FallbackValue=Note file: (none), StringFormat={}Note file: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Status}"
-                                               TextWrapping="Wrap"
-                                               Text="{Binding CurrentSessionStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Session status: Ready, StringFormat={}Session status: {0}}" />
+                    <Border Background="{DynamicResource Surface.Raised}"
+                            BorderBrush="{DynamicResource Border.Hairline}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="3,5,3,11">
+                        <Border.Style>
+                            <Style TargetType="{x:Type Border}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsSettingsOpen}" Value="False" />
+                                            <Condition Binding="{Binding IsCommandsTabActive}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Button Command="{Binding AddCommandItemCommand}"
+                                    Content="&gt;"
+                                    Width="24"
+                                    Height="24"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Foreground="{DynamicResource Accent}"
+                                    FontSize="15"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,4,0" />
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding NewCommandText, UpdateSourceTrigger=PropertyChanged}"
+                                     Tag="Add a command…"
+                                     MinHeight="36"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     FontFamily="Consolas"
+                                     FontSize="13"
+                                     VerticalContentAlignment="Center">
+                                <TextBox.InputBindings>
+                                    <KeyBinding Key="Return" Command="{Binding AddCommandItemCommand}" />
+                                </TextBox.InputBindings>
+                            </TextBox>
+                            <TextBlock Grid.Column="2"
+                                       Text="↵"
+                                       FontSize="10"
+                                       Foreground="{DynamicResource Text.Faint}"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,6,0" />
+                        </Grid>
+                    </Border>
 
-                                    <!-- DetectedWindowInfo is read-only debug state. Use TextBlock or Mode=OneWay bindings only. -->
-                                    <TextBlock Margin="0,12,0,0"
-                                               Text="Detected Window"
-                                               FontWeight="Medium"
-                                               Foreground="{DynamicResource Text.Primary}" />
-                                    <TextBlock Margin="0,6,0,0"
-                                               Foreground="{DynamicResource Text.Muted}"
-                                               Text="{Binding LastDetectedWindow.ProcessName, Mode=OneWay, TargetNullValue=(none), FallbackValue=Process: (none), StringFormat={}Process: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               TextWrapping="Wrap"
-                                               Text="{Binding LastDetectedWindow.Title, Mode=OneWay, TargetNullValue=(none), FallbackValue=Title: (none), StringFormat={}Title: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               Text="{Binding LastDetectedWindow.HwndHex, Mode=OneWay, TargetNullValue=(none), FallbackValue=HWND: (none), StringFormat={}HWND: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               Text="{Binding LastDetectedWindow.ProcessId, Mode=OneWay, TargetNullValue=(none), FallbackValue=Process ID: (none), StringFormat={}Process ID: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               TextWrapping="Wrap"
-                                               Text="{Binding LastDetectedWindow.BoundsText, Mode=OneWay, TargetNullValue=(none), FallbackValue=Bounds: (none), StringFormat={}Bounds: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               Text="{Binding LastDetectedWindow.IsMinimized, Mode=OneWay, TargetNullValue=(none), FallbackValue=Minimized: (none), StringFormat={}Minimized: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               Text="{Binding LastDetectedWindow.IsVisible, Mode=OneWay, TargetNullValue=(none), FallbackValue=Visible: (none), StringFormat={}Visible: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               Text="{Binding LastDetectedWindow.IsSessionPadWindow, Mode=OneWay, TargetNullValue=(none), FallbackValue=SessionPad window: (none), StringFormat={}SessionPad window: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               Text="{Binding LastDetectedWindow.WindowClass, Mode=OneWay, TargetNullValue=(none), FallbackValue=Class: (none), StringFormat={}Class: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Status}"
-                                               TextWrapping="Wrap"
-                                               Text="{Binding LastDetectedWindow.Error, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Status: Ready, StringFormat={}Status: {0}}" />
-                                    <TextBlock Margin="0,8,0,0"
-                                               Foreground="{DynamicResource Text.Muted}"
-                                               Text="{Binding IsAttachedToWindow, Mode=OneWay, FallbackValue=Attached: False, StringFormat={}Attached: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               TextWrapping="Wrap"
-                                               Text="{Binding LastDragAttachStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Drag attach: Ready, StringFormat={}Drag attach: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               Text="{Binding AttachmentSide, Mode=OneWay, TargetNullValue=(none), FallbackValue=Attach side: (none), StringFormat={}Attach side: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               Text="{Binding AttachmentStatus, Mode=OneWay, TargetNullValue=Not attached, FallbackValue=Attach status: Not attached, StringFormat={}Attach status: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               Text="{Binding IsHiddenBecauseTargetMinimized, Mode=OneWay, FallbackValue=Hidden by target minimize: False, StringFormat={}Hidden by target minimize: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Text.Muted}"
-                                               TextWrapping="Wrap"
-                                               Text="{Binding LastFollowUpdateText, Mode=OneWay, TargetNullValue=None, FallbackValue=Follow: None, StringFormat={}Follow: {0}}" />
-                                    <TextBlock Foreground="{DynamicResource Status}"
-                                               TextWrapping="Wrap"
-                                               Text="{Binding AttachmentError, Mode=OneWay, TargetNullValue=None, FallbackValue=Attach error: None, StringFormat={}Attach error: {0}}" />
-                                </StackPanel>
-                            </Expander>
-                        </StackPanel>
-                    </ScrollViewer>
+                    <Border Background="{DynamicResource Surface.Raised}"
+                            BorderBrush="{DynamicResource Border.Hairline}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="3,5,3,11">
+                        <Border.Style>
+                            <Style TargetType="{x:Type Border}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsSettingsOpen}" Value="False" />
+                                            <Condition Binding="{Binding IsNotesTabActive}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Button Command="{Binding AddNoteCommand}"
+                                    Content="+"
+                                    Width="24"
+                                    Height="24"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Foreground="{DynamicResource Accent}"
+                                    FontSize="15"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,4,0" />
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding NewNoteText, UpdateSourceTrigger=PropertyChanged}"
+                                     Tag="Write a note…"
+                                     MinHeight="36"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     FontSize="13"
+                                     VerticalContentAlignment="Center">
+                                <TextBox.InputBindings>
+                                    <KeyBinding Key="Return" Command="{Binding AddNoteCommand}" />
+                                </TextBox.InputBindings>
+                            </TextBox>
+                            <TextBlock Grid.Column="2"
+                                       Text="↵"
+                                       FontSize="10"
+                                       Foreground="{DynamicResource Text.Faint}"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,6,0" />
+                        </Grid>
+                    </Border>
                 </Grid>
 
-                <Grid>
-                    <Grid.Style>
-                        <Style TargetType="{x:Type Grid}">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding IsSettingsOpen}" Value="False" />
-                                        <Condition Binding="{Binding IsKeyTabActive}" Value="True" />
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </MultiDataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Grid.Style>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="0">
-                        <TextBlock Text="Key"
-                                   FontWeight="Medium"
-                                   Foreground="{DynamicResource Text.Primary}" />
-                        <DockPanel Margin="0,8,0,0">
-                            <Button DockPanel.Dock="Right"
-                                    Command="{Binding AddPinnedCommand}"
-                                    Content="Add"
-                                    MinWidth="52"
-                                    Margin="8,0,0,0"
-                                    Padding="8,4" />
-                            <TextBox Text="{Binding NewPinnedText, UpdateSourceTrigger=PropertyChanged}"
-                                     MinHeight="36"
-                                     VerticalContentAlignment="Center" />
-                        </DockPanel>
-                    </StackPanel>
-                    <ScrollViewer Grid.Row="1"
-                                  Margin="0,10,0,0"
-                                  VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding PinnedItems}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Margin="0,0,0,6">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <Border Padding="8,6"
-                                                Background="{DynamicResource Surface.Raised}"
-                                                BorderBrush="{DynamicResource Border.Hairline}"
-                                                BorderThickness="1"
-                                                CornerRadius="999">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="*" />
-                                                </Grid.ColumnDefinitions>
-                                                <Border Width="7"
-                                                        Height="7"
-                                                        Background="{DynamicResource Accent}"
-                                                        CornerRadius="4"
-                                                        VerticalAlignment="Center" />
-                                                <TextBlock Grid.Column="1"
-                                                           Margin="8,0,0,0"
-                                                           Text="{Binding Text}"
-                                                           TextWrapping="Wrap"
-                                                           Foreground="{DynamicResource Text.Primary}"
-                                                           VerticalAlignment="Center" />
-                                            </Grid>
-                                        </Border>
-                                        <Button Grid.Column="1"
-                                                Command="{Binding DataContext.DeletePinnedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}"
-                                                Content="Delete"
-                                                Margin="8,0,0,0"
-                                                Padding="6,2" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </Grid>
+                <Grid Grid.Row="3">
+                    <Grid>
+                        <Grid.Style>
+                            <Style TargetType="{x:Type Grid}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSettingsOpen}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock Text="This session"
+                                           FontWeight="Medium"
+                                           Foreground="{DynamicResource Text.Primary}" />
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Text="{Binding NewSessionName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Tag="Rename this session…"
+                                             MinHeight="36"
+                                             VerticalContentAlignment="Center" />
+                                    <Button Grid.Column="1"
+                                            Margin="8,0,0,0"
+                                            Content="Rename Session"
+                                            Command="{Binding RenameSessionCommand}"
+                                            Padding="8,4"
+                                            VerticalAlignment="Center" />
+                                </Grid>
+                                <CheckBox Margin="0,8,0,0"
+                                          Content="Pin to this app (ignore window title)"
+                                          IsChecked="{Binding IsCurrentSessionPinned, Mode=TwoWay}" />
 
-                <Grid>
-                    <Grid.Style>
-                        <Style TargetType="{x:Type Grid}">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding IsSettingsOpen}" Value="False" />
-                                        <Condition Binding="{Binding IsTodoTabActive}" Value="True" />
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </MultiDataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Grid.Style>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="0">
-                        <TextBlock Text="Todo"
-                                   FontWeight="Medium"
-                                   Foreground="{DynamicResource Text.Primary}" />
-                        <DockPanel Margin="0,8,0,0">
-                            <Button DockPanel.Dock="Right"
-                                    Command="{Binding AddTodoCommand}"
-                                    Content="Add"
-                                    MinWidth="52"
-                                    Margin="8,0,0,0"
-                                    Padding="8,4" />
-                            <TextBox Text="{Binding NewTodoText, UpdateSourceTrigger=PropertyChanged}"
-                                     MinHeight="36"
-                                     VerticalContentAlignment="Center" />
-                        </DockPanel>
-                    </StackPanel>
-                    <ScrollViewer Grid.Row="1"
-                                  Margin="0,10,0,0"
-                                  VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding TodoItems}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Margin="0,0,0,6">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <CheckBox IsChecked="{Binding IsDone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                  VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="1"
-                                                   Text="{Binding Text}"
+                                <TextBlock Margin="0,14,0,0"
+                                           Text="Local Data"
+                                           FontWeight="Medium"
+                                           Foreground="{DynamicResource Text.Primary}" />
+                                <TextBlock Margin="0,6,0,0"
+                                           Foreground="{DynamicResource Text.Muted}"
+                                           TextWrapping="Wrap"
+                                           Text="{Binding LocalDataPath, Mode=OneWay, FallbackValue=Storage path unavailable, StringFormat={}Path: {0}}" />
+                                <TextBlock Margin="0,6,0,0"
+                                           Foreground="{DynamicResource Text.Faint}"
+                                           TextWrapping="Wrap"
+                                           Text="SessionPad stores user-entered notes locally. It does not use cloud sync, login, telemetry, screen scraping, or terminal scraping." />
+                                <DockPanel Margin="0,8,0,0">
+                                    <Button DockPanel.Dock="Left"
+                                            Command="{Binding OpenLocalDataFolderCommand}"
+                                            Content="Open Folder"
+                                            MinWidth="88"
+                                            Padding="8,4" />
+                                    <Button DockPanel.Dock="Right"
+                                            Command="{Binding DeleteLocalDataCommand}"
+                                            Content="Delete All Local Data"
+                                            MinWidth="132"
+                                            Padding="8,4"
+                                            Margin="8,0,0,0" />
+                                </DockPanel>
+                                <TextBlock Margin="0,8,0,0"
+                                           Foreground="{DynamicResource Status}"
+                                           TextWrapping="Wrap"
+                                           Text="{Binding LocalDataStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Local data ready, StringFormat={}Status: {0}}" />
+
+                                <CheckBox Margin="0,12,0,0"
+                                          Content="Start with Windows"
+                                          IsChecked="{Binding StartOnLogin, Mode=TwoWay}" />
+                                <TextBlock Margin="0,6,0,0"
+                                           Foreground="{DynamicResource Status}"
+                                           TextWrapping="Wrap"
+                                           Text="{Binding StartupStatus, Mode=OneWay, FallbackValue=Startup ready, StringFormat={}Startup: {0}}" />
+                                <CheckBox Margin="0,8,0,0"
+                                          Content="Dark theme"
+                                          IsChecked="{Binding IsDarkTheme, Mode=TwoWay}" />
+
+                                <Expander Margin="0,12,0,0"
+                                          Foreground="{DynamicResource Text.Primary}">
+                                    <Expander.Header>
+                                        <TextBlock Text="Developer info"
+                                                   FontWeight="Medium"
+                                                   Foreground="{DynamicResource Text.Primary}" />
+                                    </Expander.Header>
+                                    <StackPanel Margin="0,8,0,0">
+                                        <TextBlock Text="Current Session"
+                                                   FontWeight="Medium"
+                                                   Foreground="{DynamicResource Text.Primary}" />
+                                        <TextBlock Margin="0,6,0,0"
+                                                   Foreground="{DynamicResource Text.Muted}"
                                                    TextWrapping="Wrap"
-                                                   VerticalAlignment="Center"
-                                                   Margin="8,0,0,0">
-                                            <TextBlock.Style>
-                                                <Style TargetType="{x:Type TextBlock}">
-                                                    <Setter Property="Foreground" Value="{DynamicResource Text.Primary}" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsDone}" Value="True">
-                                                            <Setter Property="TextDecorations" Value="Strikethrough" />
-                                                            <Setter Property="Foreground" Value="{DynamicResource Text.Faint}" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                        <Button Grid.Column="2"
-                                                Command="{Binding DataContext.DeleteTodoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}"
-                                                Content="Delete"
-                                                Margin="8,0,0,0"
-                                                Padding="6,2" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
+                                                   Text="{Binding CurrentSessionDisplayName, Mode=OneWay, TargetNullValue=(none), FallbackValue=Name: (none), StringFormat={}Name: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   Text="{Binding CurrentSessionKind, Mode=OneWay, TargetNullValue=(none), FallbackValue=Type: (none), StringFormat={}Type: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   TextWrapping="Wrap"
+                                                   Text="{Binding CurrentSessionId, Mode=OneWay, TargetNullValue=(none), FallbackValue=Session ID: (none), StringFormat={}Session ID: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   TextWrapping="Wrap"
+                                                   Text="{Binding CurrentNormalizedWindowTitle, Mode=OneWay, TargetNullValue=(none), FallbackValue=Normalized title: (none), StringFormat={}Normalized title: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   TextWrapping="Wrap"
+                                                   Text="{Binding CurrentSessionMatchKey, Mode=OneWay, TargetNullValue=(none), FallbackValue=Match key: (none), StringFormat={}Match key: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   TextWrapping="Wrap"
+                                                   Text="{Binding CurrentSessionNoteFile, Mode=OneWay, TargetNullValue=(none), FallbackValue=Note file: (none), StringFormat={}Note file: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Status}"
+                                                   TextWrapping="Wrap"
+                                                   Text="{Binding CurrentSessionStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Session status: Ready, StringFormat={}Session status: {0}}" />
+
+                                        <!-- DetectedWindowInfo is read-only debug state. Use TextBlock or Mode=OneWay bindings only. -->
+                                        <TextBlock Margin="0,12,0,0"
+                                                   Text="Detected Window"
+                                                   FontWeight="Medium"
+                                                   Foreground="{DynamicResource Text.Primary}" />
+                                        <TextBlock Margin="0,6,0,0"
+                                                   Foreground="{DynamicResource Text.Muted}"
+                                                   Text="{Binding LastDetectedWindow.ProcessName, Mode=OneWay, TargetNullValue=(none), FallbackValue=Process: (none), StringFormat={}Process: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   TextWrapping="Wrap"
+                                                   Text="{Binding LastDetectedWindow.Title, Mode=OneWay, TargetNullValue=(none), FallbackValue=Title: (none), StringFormat={}Title: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   Text="{Binding LastDetectedWindow.HwndHex, Mode=OneWay, TargetNullValue=(none), FallbackValue=HWND: (none), StringFormat={}HWND: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   Text="{Binding LastDetectedWindow.ProcessId, Mode=OneWay, TargetNullValue=(none), FallbackValue=Process ID: (none), StringFormat={}Process ID: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   TextWrapping="Wrap"
+                                                   Text="{Binding LastDetectedWindow.BoundsText, Mode=OneWay, TargetNullValue=(none), FallbackValue=Bounds: (none), StringFormat={}Bounds: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   Text="{Binding LastDetectedWindow.IsMinimized, Mode=OneWay, TargetNullValue=(none), FallbackValue=Minimized: (none), StringFormat={}Minimized: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   Text="{Binding LastDetectedWindow.IsVisible, Mode=OneWay, TargetNullValue=(none), FallbackValue=Visible: (none), StringFormat={}Visible: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   Text="{Binding LastDetectedWindow.IsSessionPadWindow, Mode=OneWay, TargetNullValue=(none), FallbackValue=SessionPad window: (none), StringFormat={}SessionPad window: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   Text="{Binding LastDetectedWindow.WindowClass, Mode=OneWay, TargetNullValue=(none), FallbackValue=Class: (none), StringFormat={}Class: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Status}"
+                                                   TextWrapping="Wrap"
+                                                   Text="{Binding LastDetectedWindow.Error, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Status: Ready, StringFormat={}Status: {0}}" />
+                                        <TextBlock Margin="0,8,0,0"
+                                                   Foreground="{DynamicResource Text.Muted}"
+                                                   Text="{Binding IsAttachedToWindow, Mode=OneWay, FallbackValue=Attached: False, StringFormat={}Attached: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   TextWrapping="Wrap"
+                                                   Text="{Binding LastDragAttachStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Drag attach: Ready, StringFormat={}Drag attach: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   Text="{Binding AttachmentSide, Mode=OneWay, TargetNullValue=(none), FallbackValue=Attach side: (none), StringFormat={}Attach side: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   Text="{Binding AttachmentStatus, Mode=OneWay, TargetNullValue=Not attached, FallbackValue=Attach status: Not attached, StringFormat={}Attach status: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   Text="{Binding IsHiddenBecauseTargetMinimized, Mode=OneWay, FallbackValue=Hidden by target minimize: False, StringFormat={}Hidden by target minimize: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
+                                                   TextWrapping="Wrap"
+                                                   Text="{Binding LastFollowUpdateText, Mode=OneWay, TargetNullValue=None, FallbackValue=Follow: None, StringFormat={}Follow: {0}}" />
+                                        <TextBlock Foreground="{DynamicResource Status}"
+                                                   TextWrapping="Wrap"
+                                                   Text="{Binding AttachmentError, Mode=OneWay, TargetNullValue=None, FallbackValue=Attach error: None, StringFormat={}Attach error: {0}}" />
+                                    </StackPanel>
+                                </Expander>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <Grid>
+                        <Grid.Style>
+                            <Style TargetType="{x:Type Grid}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsSettingsOpen}" Value="False" />
+                                            <Condition Binding="{Binding IsKeyTabActive}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding PinnedItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Border Padding="8,6"
+                                                    Background="{DynamicResource Surface.Raised}"
+                                                    BorderBrush="{DynamicResource Border.Hairline}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="999">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Width="7"
+                                                            Height="7"
+                                                            Background="{DynamicResource Accent}"
+                                                            CornerRadius="4"
+                                                            VerticalAlignment="Center" />
+                                                    <TextBlock Grid.Column="1"
+                                                               Margin="8,0,0,0"
+                                                               Text="{Binding Text}"
+                                                               TextWrapping="Wrap"
+                                                               Foreground="{DynamicResource Text.Primary}"
+                                                               VerticalAlignment="Center" />
+                                                </Grid>
+                                            </Border>
+                                            <Button Grid.Column="1"
+                                                    Command="{Binding DataContext.DeletePinnedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="Delete"
+                                                    Margin="8,0,0,0"
+                                                    Padding="6,2" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <Grid>
+                        <Grid.Style>
+                            <Style TargetType="{x:Type Grid}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsSettingsOpen}" Value="False" />
+                                            <Condition Binding="{Binding IsTodoTabActive}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding TodoItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox IsChecked="{Binding IsDone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding Text}"
+                                                       TextWrapping="Wrap"
+                                                       VerticalAlignment="Center"
+                                                       Margin="8,0,0,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="{x:Type TextBlock}">
+                                                        <Setter Property="Foreground" Value="{DynamicResource Text.Primary}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsDone}" Value="True">
+                                                                <Setter Property="TextDecorations" Value="Strikethrough" />
+                                                                <Setter Property="Foreground" Value="{DynamicResource Text.Faint}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <Button Grid.Column="2"
+                                                    Command="{Binding DataContext.DeleteTodoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="Delete"
+                                                    Margin="8,0,0,0"
+                                                    Padding="6,2" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <Grid>
+                        <Grid.Style>
+                            <Style TargetType="{x:Type Grid}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsSettingsOpen}" Value="False" />
+                                            <Condition Binding="{Binding IsCommandsTabActive}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock Margin="0,0,0,8"
+                                           Foreground="{DynamicResource Status}"
+                                           TextWrapping="Wrap"
+                                           Text="{Binding LastCommandCopyStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Copy status: Ready, StringFormat={}Copy status: {0}}" />
+                                <ItemsControl ItemsSource="{Binding CommandItems}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <Border Padding="8"
+                                                        Background="{DynamicResource Surface.Raised}"
+                                                        BorderBrush="{DynamicResource Border.Hairline}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="8">
+                                                    <TextBlock Text="{Binding Text}"
+                                                               TextWrapping="Wrap"
+                                                               FontFamily="Consolas"
+                                                               Foreground="{DynamicResource Text.Primary}"
+                                                               VerticalAlignment="Center" />
+                                                </Border>
+                                                <Button Grid.Column="1"
+                                                        Command="{Binding DataContext.CopyCommandItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="Copy"
+                                                        Margin="8,0,0,0"
+                                                        Padding="6,2" />
+                                                <Button Grid.Column="2"
+                                                        Command="{Binding DataContext.DeleteCommandItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="Delete"
+                                                        Margin="8,0,0,0"
+                                                        Padding="6,2" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <Grid>
+                        <Grid.Style>
+                            <Style TargetType="{x:Type Grid}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsSettingsOpen}" Value="False" />
+                                            <Condition Binding="{Binding IsNotesTabActive}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding NoteItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Border Padding="10"
+                                                    Background="{DynamicResource Surface.Raised}"
+                                                    BorderBrush="{DynamicResource Border.Hairline}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="8">
+                                                <TextBlock Text="{Binding Text}"
+                                                           TextWrapping="Wrap"
+                                                           Foreground="{DynamicResource Text.Muted}"
+                                                           VerticalAlignment="Center" />
+                                            </Border>
+                                            <Button Grid.Column="1"
+                                                    Command="{Binding DataContext.DeleteNoteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="Delete"
+                                                    Margin="8,0,0,0"
+                                                    Padding="6,2" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
                 </Grid>
 
-                <Grid>
-                    <Grid.Style>
-                        <Style TargetType="{x:Type Grid}">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding IsSettingsOpen}" Value="False" />
-                                        <Condition Binding="{Binding IsCommandsTabActive}" Value="True" />
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </MultiDataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Grid.Style>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="0">
-                        <TextBlock Text="Commands"
-                                   FontWeight="Medium"
-                                   Foreground="{DynamicResource Text.Primary}" />
-                        <DockPanel Margin="0,8,0,0">
-                            <Button DockPanel.Dock="Right"
-                                    Command="{Binding AddCommandItemCommand}"
-                                    Content="Add"
-                                    MinWidth="52"
-                                    Margin="8,0,0,0"
-                                    Padding="8,4" />
-                            <TextBox Text="{Binding NewCommandText, UpdateSourceTrigger=PropertyChanged}"
-                                     MinHeight="36"
-                                     VerticalContentAlignment="Center" />
-                        </DockPanel>
-                        <TextBlock Margin="0,8,0,0"
-                                   Foreground="{DynamicResource Status}"
-                                   TextWrapping="Wrap"
-                                   Text="{Binding LastCommandCopyStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Copy status: Ready, StringFormat={}Copy status: {0}}" />
-                    </StackPanel>
-                    <ScrollViewer Grid.Row="1"
-                                  Margin="0,10,0,0"
-                                  VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding CommandItems}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Margin="0,0,0,8">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <Border Padding="8"
-                                                Background="{DynamicResource Surface.Raised}"
-                                                BorderBrush="{DynamicResource Border.Hairline}"
-                                                BorderThickness="1"
-                                                CornerRadius="8">
-                                            <TextBlock Text="{Binding Text}"
-                                                       TextWrapping="Wrap"
-                                                       FontFamily="Consolas"
-                                                       Foreground="{DynamicResource Text.Primary}"
-                                                       VerticalAlignment="Center" />
-                                        </Border>
-                                        <Button Grid.Column="1"
-                                                Command="{Binding DataContext.CopyCommandItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}"
-                                                Content="Copy"
-                                                Margin="8,0,0,0"
-                                                Padding="6,2" />
-                                        <Button Grid.Column="2"
-                                                Command="{Binding DataContext.DeleteCommandItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}"
-                                                Content="Delete"
-                                                Margin="8,0,0,0"
-                                                Padding="6,2" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </Grid>
-
-                <Grid>
-                    <Grid.Style>
-                        <Style TargetType="{x:Type Grid}">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding IsSettingsOpen}" Value="False" />
-                                        <Condition Binding="{Binding IsNotesTabActive}" Value="True" />
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </MultiDataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Grid.Style>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="0">
-                        <TextBlock Text="Notes"
-                                   FontWeight="Medium"
-                                   Foreground="{DynamicResource Text.Primary}" />
-                        <TextBox Text="{Binding NewNoteText, UpdateSourceTrigger=PropertyChanged}"
-                                 Margin="0,8,0,0"
-                                 MinHeight="80"
-                                 TextWrapping="Wrap"
-                                 AcceptsReturn="True"
-                                 VerticalScrollBarVisibility="Auto" />
-                        <Button Command="{Binding AddNoteCommand}"
-                                Content="Add"
-                                MinWidth="52"
-                                Margin="0,8,0,0"
-                                Padding="8,4"
-                                HorizontalAlignment="Right" />
-                    </StackPanel>
-                    <ScrollViewer Grid.Row="1"
-                                  Margin="0,10,0,0"
-                                  VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding NoteItems}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Margin="0,0,0,8">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <Border Padding="10"
-                                                Background="{DynamicResource Surface.Raised}"
-                                                BorderBrush="{DynamicResource Border.Hairline}"
-                                                BorderThickness="1"
-                                                CornerRadius="8">
-                                            <TextBlock Text="{Binding Text}"
-                                                       TextWrapping="Wrap"
-                                                       Foreground="{DynamicResource Text.Muted}"
-                                                       VerticalAlignment="Center" />
-                                        </Border>
-                                        <Button Grid.Column="1"
-                                                Command="{Binding DataContext.DeleteNoteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}"
-                                                Content="Delete"
-                                                Margin="8,0,0,0"
-                                                Padding="6,2" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </Grid>
+                <Border Grid.Row="4"
+                        Margin="0,9,0,0"
+                        Padding="0,9,0,0"
+                        BorderBrush="{DynamicResource Border.Hairline}"
+                        BorderThickness="0,1,0,0">
+                    <Grid>
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center">
+                            <TextBlock Foreground="{DynamicResource Text.Faint}"
+                                       FontSize="11">
+                                <Run Text="{Binding CurrentSessionDisplayName, Mode=OneWay}" />
+                                <Run Text=" · " />
+                                <TextBlock.Style>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCurrentSessionNamed}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <Border Width="5"
+                                    Height="5"
+                                    Background="{DynamicResource Status.Success}"
+                                    CornerRadius="3"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,6,0" />
+                            <TextBlock Foreground="{DynamicResource Text.Faint}"
+                                       FontSize="11">
+                                <Run Text="attached to " />
+                                <Run Text="{Binding CurrentSessionKind, Mode=OneWay}" />
+                            </TextBlock>
+                        </StackPanel>
+                    </Grid>
+                </Border>
             </Grid>
-
-            <TextBlock Grid.Row="4"
-                       Margin="0,8,0,0"
-                       Foreground="{DynamicResource Status}"
-                       TextWrapping="Wrap"
-                       Text="{Binding CurrentSessionStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Session status: Ready, StringFormat={}Session status: {0}}" />
         </Grid>
     </Border>
 </UserControl>
