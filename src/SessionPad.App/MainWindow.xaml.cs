@@ -34,6 +34,8 @@ public partial class MainWindow : Window
     private bool _hotkeyRegistered;
     private bool _exitRequested;
     private bool _userHiddenToTray;
+    private bool _isDragAttachInProgress;
+    private string? _lastAttachedTitle;
 
     public MainWindow()
     {
@@ -112,6 +114,7 @@ public partial class MainWindow : Window
     public void BeginDragAttach()
     {
         _viewModel.SetDragAttachStatus("Drag attach started.");
+        _isDragAttachInProgress = true;
 
         if (_attachmentTimer.IsEnabled)
         {
@@ -124,6 +127,7 @@ public partial class MainWindow : Window
         }
         catch (InvalidOperationException ex)
         {
+            _isDragAttachInProgress = false;
             Debug.WriteLine($"SessionPad drag attach could not start: {ex.Message}");
             _viewModel.SetDragAttachStatus($"Drag attach could not start: {ex.Message}");
             ResumeAttachmentTimerIfAttached();
@@ -131,13 +135,21 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
+            _isDragAttachInProgress = false;
             Debug.WriteLine($"SessionPad drag attach failed: {ex}");
             _viewModel.SetDragAttachStatus($"Drag attach failed: {ex.GetType().Name}: {ex.Message}");
             ResumeAttachmentTimerIfAttached();
             return;
         }
 
-        TryAttachToNearestWindowAfterDrag();
+        try
+        {
+            TryAttachToNearestWindowAfterDrag();
+        }
+        finally
+        {
+            _isDragAttachInProgress = false;
+        }
     }
 
     private IntPtr OnWindowMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -366,6 +378,9 @@ public partial class MainWindow : Window
             var session = _sessionMatcher.FindOrCreateSession(detectedWindow);
             var matchKey = _sessionMatcher.CreateMatchKey(session.Identity);
             _viewModel.LoadWindowSession(session, matchKey);
+            _lastAttachedTitle = string.IsNullOrWhiteSpace(detectedWindow.Title)
+                ? null
+                : detectedWindow.Title;
         }
         catch (Exception ex)
         {
@@ -402,6 +417,7 @@ public partial class MainWindow : Window
         _viewModel.SetAttachmentResult(attachmentResult);
         UpdateAttachmentTimer(attachmentResult);
         ApplyAttachmentVisibility(attachmentResult);
+        SwitchSessionIfAttachedTitleChanged(attachmentResult);
     }
 
     private void UpdateAttachmentTimer(WindowAttachmentResult result)
@@ -420,6 +436,8 @@ public partial class MainWindow : Window
         {
             _attachmentTimer.Stop();
         }
+
+        _lastAttachedTitle = null;
     }
 
     private void ResumeAttachmentTimerIfAttached()
@@ -441,6 +459,53 @@ public partial class MainWindow : Window
         if (!IsVisible && !_userHiddenToTray)
         {
             ShowAndRestoreSafely();
+        }
+    }
+
+    private void SwitchSessionIfAttachedTitleChanged(WindowAttachmentResult result)
+    {
+        if (!result.ShouldContinueTracking
+            || result.IsHiddenBecauseTargetMinimized
+            || _isDragAttachInProgress
+            || _userHiddenToTray
+            || !IsVisible)
+        {
+            return;
+        }
+
+        var attachedHwnd = _windowAttachmentService.AttachedTargetHwnd;
+        if (attachedHwnd == IntPtr.Zero)
+        {
+            return;
+        }
+
+        DetectedWindowInfo windowInfo;
+        try
+        {
+            windowInfo = _windowDetectionService.GetWindowInfo(attachedHwnd, _windowHandle);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"SessionPad could not read attached window title: {ex}");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(windowInfo.Title))
+        {
+            return;
+        }
+
+        if (string.Equals(windowInfo.Title, _lastAttachedTitle, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _lastAttachedTitle = windowInfo.Title;
+        _viewModel.SetLastDetectedWindow(windowInfo);
+
+        if (CanUseWindowSession(windowInfo))
+        {
+            LoadWindowSessionSafely(windowInfo);
         }
     }
 
