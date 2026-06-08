@@ -9,6 +9,7 @@ public sealed class SettingsService
     private const string AppDirectoryName = "SessionPad";
     private const string SettingsFileName = "settings.json";
     private const string DefaultTheme = "Dark";
+    private const string DefaultHotkey = "Ctrl+Alt+N";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -41,6 +42,17 @@ public sealed class SettingsService
     public void SaveAutoTrackForeground(bool value)
     {
         Save(Load() with { AutoTrackForeground = value });
+    }
+
+    public string LoadHotkey()
+    {
+        var hotkey = Load().Hotkey;
+        return string.IsNullOrWhiteSpace(hotkey) ? DefaultHotkey : hotkey;
+    }
+
+    public void SaveHotkey(string token)
+    {
+        Save(Load() with { Hotkey = string.IsNullOrWhiteSpace(token) ? DefaultHotkey : token });
     }
 
     private AppSettings Load()
@@ -114,5 +126,8 @@ public sealed class SettingsService
         }
     }
 
-    private sealed record AppSettings(string Theme, bool AutoTrackForeground = false);
+    private sealed record AppSettings(
+        string Theme,
+        bool AutoTrackForeground = false,
+        string Hotkey = DefaultHotkey);
 }

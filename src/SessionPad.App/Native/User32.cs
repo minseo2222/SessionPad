@@ -40,6 +40,8 @@ internal static partial class User32
 
     public const uint ModControl = 0x0002;
 
+    public const uint ModShift = 0x0004;
+
     public const uint VirtualKeyN = 0x4E;
 
     public const uint SwpNoSize = 0x0001;

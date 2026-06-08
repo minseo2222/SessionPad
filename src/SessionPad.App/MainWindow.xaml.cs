@@ -59,6 +59,7 @@ public partial class MainWindow : Window
         _foregroundWatchTimer.Interval = ForegroundWatchInterval;
         _foregroundWatchTimer.Tick += OnForegroundWatchTick;
         _viewModel.AutoTrackForegroundChanged += OnAutoTrackForegroundChanged;
+        _viewModel.HotkeyChangeRequested += OnHotkeyChangeRequested;
         _winEventService.WinEventReceived += OnWinEventReceived;
 
         InitializeTrayIcon();
@@ -72,11 +73,12 @@ public partial class MainWindow : Window
         _source = HwndSource.FromHwnd(_windowHandle);
         _source?.AddHook(OnWindowMessage);
 
-        _hotkeyRegistered = _hotkeyService.Register(_windowHandle);
+        var hotkey = _viewModel.AppliedHotkey;
+        _hotkeyRegistered = _hotkeyService.Register(_windowHandle, hotkey.Modifiers, hotkey.VirtualKey);
         if (!_hotkeyRegistered)
         {
             Debug.WriteLine(
-                $"SessionPad could not register Ctrl+Alt+N. Win32 error: {_hotkeyService.LastRegistrationError}.");
+                $"SessionPad could not register {hotkey.Display}. Win32 error: {_hotkeyService.LastRegistrationError}.");
         }
 
         var hooksActive = _winEventService.Start();
@@ -101,6 +103,7 @@ public partial class MainWindow : Window
     {
         _viewModel.DeleteLocalDataRequested -= OnDeleteLocalDataRequested;
         _viewModel.AutoTrackForegroundChanged -= OnAutoTrackForegroundChanged;
+        _viewModel.HotkeyChangeRequested -= OnHotkeyChangeRequested;
         _attachmentTimer.Stop();
         _attachmentTimer.Tick -= OnAttachmentTimerTick;
         _foregroundWatchTimer.Stop();
@@ -302,6 +305,38 @@ public partial class MainWindow : Window
         }
 
         AttachToDetectedWindow(detectedWindow, activateAfterAttach: true, dragStatusOnSuccess: null);
+    }
+
+    private void OnHotkeyChangeRequested(object? sender, Models.HotkeyOption option)
+    {
+        if (_windowHandle == IntPtr.Zero)
+        {
+            _viewModel.NotifyHotkeyApplied(false, "window not ready");
+            return;
+        }
+
+        if (_hotkeyRegistered)
+        {
+            _hotkeyService.Unregister(_windowHandle);
+            _hotkeyRegistered = false;
+        }
+
+        if (_hotkeyService.Register(_windowHandle, option.Modifiers, option.VirtualKey))
+        {
+            _hotkeyRegistered = true;
+            _viewModel.NotifyHotkeyApplied(true, null);
+            return;
+        }
+
+        var error = _hotkeyService.LastRegistrationError;
+
+        // Re-register the previously applied hotkey so SessionPad stays usable.
+        var previous = _viewModel.AppliedHotkey;
+        _hotkeyRegistered = _hotkeyService.Register(
+            _windowHandle,
+            previous.Modifiers,
+            previous.VirtualKey);
+        _viewModel.NotifyHotkeyApplied(false, $"Win32 error {error}");
     }
 
     private void TryAttachToNearestWindowAfterDrag()

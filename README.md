@@ -151,15 +151,21 @@ SessionPad v0.1 is local-first:
 
 ## Known Limitations
 
-- Window identity is currently `processName + normalizedWindowTitle`.
+- Window identity is currently `processName + normalizedWindowTitle`. Two windows
+  with the same title share one note.
 - VS Code workspace/project detection is not implemented.
 - Windows Terminal tab detection is not implemented.
 - Browser URL/tab detection is not implemented.
 - UI Automation is not implemented.
-- Automatic foreground-change restore is not implemented.
-- WinEvent hook tracking is not implemented; following currently uses polling.
+- Automatic foreground-change restore is available as an opt-in setting
+  ("Auto-track focused window"), off by default.
+- Window following uses WinEvent hooks, with low-frequency polling as a fallback.
+- The attach shortcut is configurable from a preset list, not free-form key capture.
 - Multi-monitor and DPI behavior should still be manually tested.
 - No installer or MSIX package yet.
+
+See `docs/V0_3_0_RELEASE_NOTES.md` for the latest additions (item reordering,
+auto-track, WinEvent following, note backups, search, and a configurable shortcut).
 
 ## Project Layout
 

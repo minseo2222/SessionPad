@@ -8,12 +8,22 @@ using System.Text.Json;
 using System.Windows.Input;
 using System.Windows.Threading;
 using SessionPad.App.Models;
+using SessionPad.App.Native;
 using SessionPad.App.Services;
 
 namespace SessionPad.App.ViewModels;
 
 public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 {
+    private static readonly HotkeyOption[] HotkeyPresets =
+    [
+        new("Ctrl+Alt+N", "Ctrl + Alt + N", User32.ModControl | User32.ModAlt, 0x4E),
+        new("Ctrl+Shift+N", "Ctrl + Shift + N", User32.ModControl | User32.ModShift, 0x4E),
+        new("Ctrl+Alt+S", "Ctrl + Alt + S", User32.ModControl | User32.ModAlt, 0x53),
+        new("Ctrl+Alt+Space", "Ctrl + Alt + Space", User32.ModControl | User32.ModAlt, 0x20),
+        new("Ctrl+Shift+Space", "Ctrl + Shift + Space", User32.ModControl | User32.ModShift, 0x20),
+    ];
+
     private readonly NoteStorageService _storageService;
     private readonly SessionMatcher _sessionMatcher;
     private readonly LocalDataService _localDataService;
@@ -61,6 +71,9 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string _newNoteText = string.Empty;
     private string _searchQuery = string.Empty;
     private string _searchStatus = "Type a word, then press Enter to search your notes.";
+    private HotkeyOption _selectedHotkey;
+    private HotkeyOption _appliedHotkey;
+    private string _hotkeyStatus;
 
     public FloatingNoteViewModel()
         : this(new NoteStorageService(), new LocalDataService(), new ClipboardService())
@@ -89,6 +102,11 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
             StringComparison.OrdinalIgnoreCase);
         _autoTrackForeground = _settingsService.LoadAutoTrackForeground();
 
+        var hotkeyToken = _settingsService.LoadHotkey();
+        _appliedHotkey = Array.Find(HotkeyPresets, option => option.Token == hotkeyToken) ?? HotkeyPresets[0];
+        _selectedHotkey = _appliedHotkey;
+        _hotkeyStatus = $"Current: {_appliedHotkey.Display}";
+
         ExpandCommand = new RelayCommand(() => PanelState = NotePanelState.CompactNote);
         CollapseCommand = new RelayCommand(() => PanelState = NotePanelState.DockedTab);
         SelectNoteTabCommand = new RelayCommand(SelectNoteTab);
@@ -114,6 +132,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         SearchCommand = new RelayCommand(RunSearch);
         ClearSearchCommand = new RelayCommand(ClearSearch);
         JumpToSearchResultCommand = new RelayCommand(JumpToSearchResult);
+        ApplyHotkeyCommand = new RelayCommand(ApplyHotkey);
 
         _copyToastTimer.Tick += OnCopyToastTimerTick;
         TodoItems.CollectionChanged += OnTodoItemsChanged;
@@ -125,6 +144,8 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public event EventHandler? DeleteLocalDataRequested;
 
     public event EventHandler<bool>? AutoTrackForegroundChanged;
+
+    public event EventHandler<HotkeyOption>? HotkeyChangeRequested;
 
     public ICommand ExpandCommand { get; }
 
@@ -175,6 +196,24 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public ICommand JumpToSearchResultCommand { get; }
 
     public ObservableCollection<SearchResultViewModel> SearchResults { get; } = new();
+
+    public ICommand ApplyHotkeyCommand { get; }
+
+    public IReadOnlyList<HotkeyOption> HotkeyOptions => HotkeyPresets;
+
+    public HotkeyOption SelectedHotkey
+    {
+        get => _selectedHotkey;
+        set => SetField(ref _selectedHotkey, value);
+    }
+
+    public HotkeyOption AppliedHotkey => _appliedHotkey;
+
+    public string HotkeyStatus
+    {
+        get => _hotkeyStatus;
+        private set => SetField(ref _hotkeyStatus, value);
+    }
 
     public ObservableCollection<PinnedItemViewModel> PinnedItems { get; } = new();
 
@@ -1048,6 +1087,34 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     }
 
     private sealed record SearchMatch(string Section, string Text, int Total);
+
+    private void ApplyHotkey()
+    {
+        if (_selectedHotkey is null
+            || string.Equals(_selectedHotkey.Token, _appliedHotkey.Token, StringComparison.Ordinal))
+        {
+            HotkeyStatus = $"Current: {_appliedHotkey.Display}";
+            return;
+        }
+
+        HotkeyChangeRequested?.Invoke(this, _selectedHotkey);
+    }
+
+    public void NotifyHotkeyApplied(bool success, string? error)
+    {
+        if (success)
+        {
+            _appliedHotkey = _selectedHotkey;
+            _settingsService.SaveHotkey(_appliedHotkey.Token);
+            OnPropertyChanged(nameof(AppliedHotkey));
+            HotkeyStatus = $"Hotkey set to {_appliedHotkey.Display}";
+            return;
+        }
+
+        SelectedHotkey = _appliedHotkey;
+        HotkeyStatus =
+            $"Could not set that shortcut ({error ?? "unknown error"}). Still using {_appliedHotkey.Display}.";
+    }
 
     private void ShowCopyFeedback(string message)
     {

@@ -9,7 +9,7 @@ public sealed class HotkeyService
 
     public int LastRegistrationError { get; private set; }
 
-    public bool Register(IntPtr hwnd)
+    public bool Register(IntPtr hwnd, uint modifiers, uint virtualKey)
     {
         LastRegistrationError = 0;
 
@@ -21,8 +21,8 @@ public sealed class HotkeyService
         var registered = User32.RegisterHotKey(
             hwnd,
             ShowSessionPadHotkeyId,
-            User32.ModControl | User32.ModAlt,
-            User32.VirtualKeyN);
+            modifiers,
+            virtualKey);
 
         if (!registered)
         {

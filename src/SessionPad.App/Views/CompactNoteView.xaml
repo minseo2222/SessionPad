@@ -754,6 +754,32 @@
                                            TextWrapping="Wrap"
                                            Text="When on, SessionPad attaches to whichever window you focus and shows its note. Matching uses the window title only; nothing inside the window is read." />
 
+                                <TextBlock Margin="0,14,0,0"
+                                           Text="Attach shortcut"
+                                           FontWeight="Medium"
+                                           Foreground="{DynamicResource Text.Primary}" />
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox ItemsSource="{Binding HotkeyOptions}"
+                                              SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}"
+                                              DisplayMemberPath="Display"
+                                              MinHeight="32"
+                                              VerticalContentAlignment="Center" />
+                                    <Button Grid.Column="1"
+                                            Margin="8,0,0,0"
+                                            Content="Apply"
+                                            Command="{Binding ApplyHotkeyCommand}"
+                                            Padding="12,4"
+                                            VerticalAlignment="Center" />
+                                </Grid>
+                                <TextBlock Margin="0,6,0,0"
+                                           Foreground="{DynamicResource Status}"
+                                           TextWrapping="Wrap"
+                                           Text="{Binding HotkeyStatus, Mode=OneWay}" />
+
                                 <Expander Margin="0,12,0,0"
                                           Foreground="{DynamicResource Text.Primary}">
                                     <Expander.Header>
