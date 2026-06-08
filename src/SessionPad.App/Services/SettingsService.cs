@@ -25,16 +25,36 @@ public sealed class SettingsService
 
     public string LoadTheme()
     {
+        return NormalizeTheme(Load().Theme);
+    }
+
+    public void SaveTheme(string theme)
+    {
+        Save(Load() with { Theme = NormalizeTheme(theme) });
+    }
+
+    public bool LoadAutoTrackForeground()
+    {
+        return Load().AutoTrackForeground;
+    }
+
+    public void SaveAutoTrackForeground(bool value)
+    {
+        Save(Load() with { AutoTrackForeground = value });
+    }
+
+    private AppSettings Load()
+    {
         if (!File.Exists(SettingsPath))
         {
-            return DefaultTheme;
+            return new AppSettings(DefaultTheme);
         }
 
         try
         {
             var json = File.ReadAllText(SettingsPath);
             var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
-            return NormalizeTheme(settings?.Theme);
+            return settings ?? new AppSettings(DefaultTheme);
         }
         catch (Exception ex) when (ex is JsonException
             or NotSupportedException
@@ -42,15 +62,15 @@ public sealed class SettingsService
             or UnauthorizedAccessException)
         {
             Debug.WriteLine($"SessionPad could not load settings '{SettingsPath}': {ex.Message}");
-            return DefaultTheme;
+            return new AppSettings(DefaultTheme);
         }
     }
 
-    public void SaveTheme(string theme)
+    private void Save(AppSettings settings)
     {
         try
         {
-            SaveJsonAtomic(SettingsPath, new AppSettings(NormalizeTheme(theme)));
+            SaveJsonAtomic(SettingsPath, settings with { Theme = NormalizeTheme(settings.Theme) });
         }
         catch (Exception ex) when (ex is IOException
             or UnauthorizedAccessException
@@ -94,5 +114,5 @@ public sealed class SettingsService
         }
     }
 
-    private sealed record AppSettings(string Theme);
+    private sealed record AppSettings(string Theme, bool AutoTrackForeground = false);
 }

@@ -675,6 +675,13 @@
                                 <CheckBox Margin="0,8,0,0"
                                           Content="Dark theme"
                                           IsChecked="{Binding IsDarkTheme, Mode=TwoWay}" />
+                                <CheckBox Margin="0,12,0,0"
+                                          Content="Auto-track focused window"
+                                          IsChecked="{Binding AutoTrackForeground, Mode=TwoWay}" />
+                                <TextBlock Margin="0,6,0,0"
+                                           Foreground="{DynamicResource Text.Faint}"
+                                           TextWrapping="Wrap"
+                                           Text="When on, SessionPad attaches to whichever window you focus and shows its note. Matching uses the window title only; nothing inside the window is read." />
 
                                 <Expander Margin="0,12,0,0"
                                           Foreground="{DynamicResource Text.Primary}">

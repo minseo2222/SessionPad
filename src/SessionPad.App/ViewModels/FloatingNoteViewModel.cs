@@ -49,6 +49,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string _activeNoteTab = "Key";
     private bool _startOnLogin;
     private bool _isDarkTheme;
+    private bool _autoTrackForeground;
     private bool _showCopyToast;
     private bool _isCurrentSessionPinned;
     private bool _isSettingsOpen;
@@ -82,6 +83,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
             _themeService.CurrentTheme,
             ThemeService.DarkThemeName,
             StringComparison.OrdinalIgnoreCase);
+        _autoTrackForeground = _settingsService.LoadAutoTrackForeground();
 
         ExpandCommand = new RelayCommand(() => PanelState = NotePanelState.CompactNote);
         CollapseCommand = new RelayCommand(() => PanelState = NotePanelState.DockedTab);
@@ -114,6 +116,8 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public event EventHandler? DeleteLocalDataRequested;
+
+    public event EventHandler<bool>? AutoTrackForegroundChanged;
 
     public ICommand ExpandCommand { get; }
 
@@ -346,6 +350,23 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
             _settingsService.SaveTheme(theme);
             _isDarkTheme = value;
             OnPropertyChanged();
+        }
+    }
+
+    public bool AutoTrackForeground
+    {
+        get => _autoTrackForeground;
+        set
+        {
+            if (_autoTrackForeground == value)
+            {
+                return;
+            }
+
+            _autoTrackForeground = value;
+            _settingsService.SaveAutoTrackForeground(value);
+            OnPropertyChanged();
+            AutoTrackForegroundChanged?.Invoke(this, value);
         }
     }
 

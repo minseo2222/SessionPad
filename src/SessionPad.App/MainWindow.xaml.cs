@@ -16,6 +16,7 @@ namespace SessionPad.App;
 public partial class MainWindow : Window
 {
     private static readonly TimeSpan AttachmentPollInterval = TimeSpan.FromMilliseconds(60);
+    private static readonly TimeSpan ForegroundWatchInterval = TimeSpan.FromMilliseconds(400);
     private const int DragAttachThresholdPx = 48;
 
     private readonly HotkeyService _hotkeyService = new();
@@ -26,6 +27,7 @@ public partial class MainWindow : Window
     private readonly SessionMatcher _sessionMatcher;
     private readonly FloatingNoteViewModel _viewModel;
     private readonly DispatcherTimer _attachmentTimer = new(DispatcherPriority.Render);
+    private readonly DispatcherTimer _foregroundWatchTimer = new(DispatcherPriority.Background);
     private Forms.NotifyIcon? _notifyIcon;
     private Forms.ContextMenuStrip? _trayMenu;
     private Drawing.Icon? _trayIcon;
@@ -36,6 +38,7 @@ public partial class MainWindow : Window
     private bool _userHiddenToTray;
     private bool _isDragAttachInProgress;
     private string? _lastAttachedTitle;
+    private IntPtr _lastForegroundHwnd;
 
     public MainWindow()
     {
@@ -50,6 +53,10 @@ public partial class MainWindow : Window
 
         _attachmentTimer.Interval = AttachmentPollInterval;
         _attachmentTimer.Tick += OnAttachmentTimerTick;
+
+        _foregroundWatchTimer.Interval = ForegroundWatchInterval;
+        _foregroundWatchTimer.Tick += OnForegroundWatchTick;
+        _viewModel.AutoTrackForegroundChanged += OnAutoTrackForegroundChanged;
 
         InitializeTrayIcon();
     }
@@ -68,6 +75,8 @@ public partial class MainWindow : Window
             Debug.WriteLine(
                 $"SessionPad could not register Ctrl+Alt+N. Win32 error: {_hotkeyService.LastRegistrationError}.");
         }
+
+        UpdateForegroundWatchTimer();
     }
 
     protected override void OnClosing(CancelEventArgs e)
@@ -86,8 +95,11 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _viewModel.DeleteLocalDataRequested -= OnDeleteLocalDataRequested;
+        _viewModel.AutoTrackForegroundChanged -= OnAutoTrackForegroundChanged;
         _attachmentTimer.Stop();
         _attachmentTimer.Tick -= OnAttachmentTimerTick;
+        _foregroundWatchTimer.Stop();
+        _foregroundWatchTimer.Tick -= OnForegroundWatchTick;
         _windowAttachmentService.Detach("SessionPad closed.");
 
         if (_hotkeyRegistered)
@@ -418,6 +430,92 @@ public partial class MainWindow : Window
         UpdateAttachmentTimer(attachmentResult);
         ApplyAttachmentVisibility(attachmentResult);
         SwitchSessionIfAttachedTitleChanged(attachmentResult);
+    }
+
+    private void OnAutoTrackForegroundChanged(object? sender, bool enabled)
+    {
+        _viewModel.SetDragAttachStatus(enabled
+            ? "Auto-tracking on. SessionPad follows the focused window."
+            : "Auto-tracking off.");
+        UpdateForegroundWatchTimer();
+    }
+
+    private void UpdateForegroundWatchTimer()
+    {
+        if (_viewModel.AutoTrackForeground)
+        {
+            if (!_foregroundWatchTimer.IsEnabled)
+            {
+                _foregroundWatchTimer.Start();
+            }
+
+            return;
+        }
+
+        if (_foregroundWatchTimer.IsEnabled)
+        {
+            _foregroundWatchTimer.Stop();
+        }
+
+        _lastForegroundHwnd = IntPtr.Zero;
+    }
+
+    private void OnForegroundWatchTick(object? sender, EventArgs e)
+    {
+        if (!_viewModel.AutoTrackForeground)
+        {
+            _foregroundWatchTimer.Stop();
+            return;
+        }
+
+        // Suppress automatic switching while the user hid SessionPad to the tray
+        // or is dragging it to attach manually.
+        if (_userHiddenToTray || _isDragAttachInProgress)
+        {
+            return;
+        }
+
+        DetectedWindowInfo detectedWindow;
+        try
+        {
+            detectedWindow = _windowDetectionService.GetForegroundWindowInfo(_windowHandle);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"SessionPad auto-track could not read the foreground window: {ex}");
+            return;
+        }
+
+        if (detectedWindow.Hwnd == IntPtr.Zero || detectedWindow.IsCurrentProcessWindow)
+        {
+            return;
+        }
+
+        // Already attached to and following this window; the attachment timer handles it.
+        if (_windowAttachmentService.HasAttachedTarget
+            && detectedWindow.Hwnd == _windowAttachmentService.AttachedTargetHwnd)
+        {
+            _lastForegroundHwnd = detectedWindow.Hwnd;
+            return;
+        }
+
+        // Only attempt once per distinct foreground window to avoid repeated retries.
+        if (detectedWindow.Hwnd == _lastForegroundHwnd)
+        {
+            return;
+        }
+
+        if (!CanUseWindowSession(detectedWindow))
+        {
+            return;
+        }
+
+        _lastForegroundHwnd = detectedWindow.Hwnd;
+        _viewModel.SetLastDetectedWindow(detectedWindow);
+
+        // activateAfterAttach must stay false so we never steal focus from the
+        // window the user just switched to.
+        AttachToDetectedWindow(detectedWindow, activateAfterAttach: false, dragStatusOnSuccess: null);
     }
 
     private void UpdateAttachmentTimer(WindowAttachmentResult result)
