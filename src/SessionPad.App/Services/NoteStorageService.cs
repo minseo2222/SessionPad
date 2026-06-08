@@ -16,11 +16,15 @@ public sealed class NoteStorageService
         Converters = { new JsonStringEnumConverter() }
     };
 
+    private const int MaxBackupsPerSession = 5;
+
     public string AppDataDirectory { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "SessionPad");
 
     public string NotesDirectory => Path.Combine(AppDataDirectory, "notes");
+
+    public string BackupsDirectory => Path.Combine(AppDataDirectory, "backups");
 
     public string SessionIndexPath => Path.Combine(AppDataDirectory, "sessions.index.json");
 
@@ -34,6 +38,7 @@ public sealed class NoteStorageService
     public void SaveDefaultNote(SessionNote note)
     {
         SaveJsonAtomic(DefaultNotePath, note);
+        TryWriteBackup("default", note);
     }
 
     public SessionNote? LoadSessionNote(SessionSummary session)
@@ -44,6 +49,32 @@ public sealed class NoteStorageService
     public void SaveSessionNote(SessionSummary session, SessionNote note)
     {
         SaveJsonAtomic(GetAbsoluteStoragePath(session.NoteFile), note);
+        TryWriteBackup(DeriveBackupKey(session), note);
+    }
+
+    public IReadOnlyList<StoredNote> LoadAllNotes()
+    {
+        var results = new List<StoredNote>();
+
+        var defaultNote = LoadDefaultNote();
+        if (defaultNote is not null)
+        {
+            results.Add(new StoredNote(null, "Default local note", defaultNote));
+        }
+
+        foreach (var session in LoadSessionIndex().Sessions)
+        {
+            var note = LoadSessionNote(session);
+            if (note is not null)
+            {
+                var name = string.IsNullOrWhiteSpace(session.DisplayName)
+                    ? "Window session"
+                    : session.DisplayName;
+                results.Add(new StoredNote(session, name, note));
+            }
+        }
+
+        return results;
     }
 
     public SessionIndex LoadSessionIndex()
@@ -106,6 +137,55 @@ public sealed class NoteStorageService
         return Path.Combine(AppDataDirectory, relativePath.Replace('/', Path.DirectorySeparatorChar));
     }
 
+    private static string DeriveBackupKey(SessionSummary session)
+    {
+        return string.IsNullOrWhiteSpace(session.SessionId) ? "session" : session.SessionId;
+    }
+
+    private void TryWriteBackup(string sessionKey, SessionNote note)
+    {
+        // Best-effort: a backup failure must never break the primary save.
+        try
+        {
+            Directory.CreateDirectory(BackupsDirectory);
+            var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmssfff");
+            var backupPath = Path.Combine(BackupsDirectory, $"{sessionKey}.{timestamp}.json");
+            File.WriteAllText(backupPath, JsonSerializer.Serialize(note, JsonOptions));
+            PruneBackups(sessionKey);
+        }
+        catch (Exception ex) when (ex is IOException
+            or UnauthorizedAccessException
+            or NotSupportedException
+            or JsonException)
+        {
+            Debug.WriteLine($"SessionPad could not write a backup for '{sessionKey}': {ex.Message}");
+        }
+    }
+
+    private void PruneBackups(string sessionKey)
+    {
+        try
+        {
+            var prefix = sessionKey + ".";
+            var stale = Directory.GetFiles(BackupsDirectory, $"{sessionKey}.*.json")
+                .Where(path => Path.GetFileName(path).StartsWith(prefix, StringComparison.Ordinal))
+                .OrderByDescending(path => path, StringComparer.Ordinal)
+                .Skip(MaxBackupsPerSession)
+                .ToList();
+
+            foreach (var file in stale)
+            {
+                File.Delete(file);
+            }
+        }
+        catch (Exception ex) when (ex is IOException
+            or UnauthorizedAccessException
+            or NotSupportedException)
+        {
+            Debug.WriteLine($"SessionPad could not prune backups for '{sessionKey}': {ex.Message}");
+        }
+    }
+
     private static void SaveJsonAtomic<T>(string path, T value)
     {
         var directory = Path.GetDirectoryName(path);
@@ -131,4 +211,6 @@ public sealed class NoteStorageService
             }
         }
     }
+
+    public sealed record StoredNote(SessionSummary? Session, string DisplayName, SessionNote Note);
 }

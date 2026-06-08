@@ -1,7 +1,39 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using SessionPad.App.Models;
 
 namespace SessionPad.App.ViewModels;
+
+public sealed class SearchResultViewModel
+{
+    public SearchResultViewModel(
+        SessionSummary? session,
+        string sessionName,
+        string sectionLabel,
+        string snippet,
+        int matchCount)
+    {
+        Session = session;
+        SessionName = sessionName;
+        SectionLabel = sectionLabel;
+        Snippet = snippet;
+        MatchCount = matchCount;
+    }
+
+    public SessionSummary? Session { get; }
+
+    public string SessionName { get; }
+
+    public string SectionLabel { get; }
+
+    public string Snippet { get; }
+
+    public int MatchCount { get; }
+
+    public string MatchSummary => MatchCount == 1
+        ? $"{SectionLabel} · 1 match"
+        : $"{SectionLabel} · {MatchCount} matches";
+}
 
 public sealed class PinnedItemViewModel
 {

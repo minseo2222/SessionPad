@@ -15,6 +15,7 @@ namespace SessionPad.App.ViewModels;
 public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 {
     private readonly NoteStorageService _storageService;
+    private readonly SessionMatcher _sessionMatcher;
     private readonly LocalDataService _localDataService;
     private readonly ClipboardService _clipboardService;
     private readonly StartupService _startupService = new();
@@ -58,6 +59,8 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string _newTodoText = string.Empty;
     private string _newCommandText = string.Empty;
     private string _newNoteText = string.Empty;
+    private string _searchQuery = string.Empty;
+    private string _searchStatus = "Type a word, then press Enter to search your notes.";
 
     public FloatingNoteViewModel()
         : this(new NoteStorageService(), new LocalDataService(), new ClipboardService())
@@ -75,6 +78,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         ClipboardService clipboardService)
     {
         _storageService = storageService;
+        _sessionMatcher = new SessionMatcher(storageService);
         _localDataService = localDataService;
         _clipboardService = clipboardService;
         _startOnLogin = _startupService.IsEnabled();
@@ -107,6 +111,9 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         CopyNoteCommand = new RelayCommand(CopyNote);
         MoveItemUpCommand = new RelayCommand(MoveItemUp);
         MoveItemDownCommand = new RelayCommand(MoveItemDown);
+        SearchCommand = new RelayCommand(RunSearch);
+        ClearSearchCommand = new RelayCommand(ClearSearch);
+        JumpToSearchResultCommand = new RelayCommand(JumpToSearchResult);
 
         _copyToastTimer.Tick += OnCopyToastTimerTick;
         TodoItems.CollectionChanged += OnTodoItemsChanged;
@@ -160,6 +167,14 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public ICommand MoveItemUpCommand { get; }
 
     public ICommand MoveItemDownCommand { get; }
+
+    public ICommand SearchCommand { get; }
+
+    public ICommand ClearSearchCommand { get; }
+
+    public ICommand JumpToSearchResultCommand { get; }
+
+    public ObservableCollection<SearchResultViewModel> SearchResults { get; } = new();
 
     public ObservableCollection<PinnedItemViewModel> PinnedItems { get; } = new();
 
@@ -458,6 +473,18 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     {
         get => _newNoteText;
         set => SetField(ref _newNoteText, value);
+    }
+
+    public string SearchQuery
+    {
+        get => _searchQuery;
+        set => SetField(ref _searchQuery, value);
+    }
+
+    public string SearchStatus
+    {
+        get => _searchStatus;
+        private set => SetField(ref _searchStatus, value);
     }
 
     public void SetLastDetectedWindow(DetectedWindowInfo detectedWindow)
@@ -920,6 +947,107 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         collection.Move(index, target);
         SaveNote();
     }
+
+    private void RunSearch()
+    {
+        SearchResults.Clear();
+        var query = (SearchQuery ?? string.Empty).Trim();
+        if (query.Length == 0)
+        {
+            SearchStatus = "Type a word, then press Enter to search your notes.";
+            return;
+        }
+
+        try
+        {
+            foreach (var entry in _storageService.LoadAllNotes())
+            {
+                var match = FindFirstMatch(entry.Note, query);
+                if (match is null)
+                {
+                    continue;
+                }
+
+                SearchResults.Add(new SearchResultViewModel(
+                    entry.Session,
+                    entry.DisplayName,
+                    match.Section,
+                    match.Text,
+                    match.Total));
+            }
+
+            SearchStatus = SearchResults.Count == 0
+                ? $"No matches for \"{query}\"."
+                : $"{SearchResults.Count} session(s) matched \"{query}\".";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            Debug.WriteLine($"SessionPad search failed: {ex.Message}");
+            SearchStatus = $"Search failed: {ex.Message}";
+        }
+    }
+
+    private void ClearSearch()
+    {
+        SearchQuery = string.Empty;
+        SearchResults.Clear();
+        SearchStatus = "Type a word, then press Enter to search your notes.";
+    }
+
+    private void JumpToSearchResult(object? item)
+    {
+        if (item is not SearchResultViewModel result)
+        {
+            return;
+        }
+
+        if (result.Session is null)
+        {
+            SaveNote();
+            LoadDefaultNote();
+        }
+        else
+        {
+            var matchKey = _sessionMatcher.CreateMatchKey(result.Session.Identity);
+            LoadWindowSession(result.Session, matchKey);
+        }
+
+        IsSettingsOpen = false;
+        ClearSearch();
+    }
+
+    private static SearchMatch? FindFirstMatch(SessionNote note, string query)
+    {
+        string? section = null;
+        string? text = null;
+        var total = 0;
+
+        void Scan(string label, IEnumerable<string> values)
+        {
+            foreach (var value in values)
+            {
+                if (!string.IsNullOrEmpty(value)
+                    && value.Contains(query, StringComparison.OrdinalIgnoreCase))
+                {
+                    total++;
+                    if (section is null)
+                    {
+                        section = label;
+                        text = value;
+                    }
+                }
+            }
+        }
+
+        Scan("Key", note.Sections.Pinned.Select(item => item.Text));
+        Scan("Todo", note.Sections.Todo.Select(item => item.Text));
+        Scan("Commands", note.Sections.Commands.Select(item => item.Text));
+        Scan("Notes", note.Sections.Notes.Select(item => item.Text));
+
+        return section is null ? null : new SearchMatch(section, text!, total);
+    }
+
+    private sealed record SearchMatch(string Section, string Text, int Total);
 
     private void ShowCopyFeedback(string message)
     {

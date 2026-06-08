@@ -612,6 +612,77 @@
                         </Grid.Style>
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
+                                <TextBlock Text="Search notes"
+                                           FontWeight="Medium"
+                                           Foreground="{DynamicResource Text.Primary}" />
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Text="{Binding SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Tag="Search all sessions…"
+                                             MinHeight="36"
+                                             VerticalContentAlignment="Center">
+                                        <TextBox.InputBindings>
+                                            <KeyBinding Key="Return" Command="{Binding SearchCommand}" />
+                                        </TextBox.InputBindings>
+                                    </TextBox>
+                                    <Button Grid.Column="1"
+                                            Margin="8,0,0,0"
+                                            Content="Search"
+                                            Command="{Binding SearchCommand}"
+                                            Padding="10,4"
+                                            VerticalAlignment="Center" />
+                                    <Button Grid.Column="2"
+                                            Margin="6,0,0,0"
+                                            Content="Clear"
+                                            Command="{Binding ClearSearchCommand}"
+                                            Padding="8,4"
+                                            VerticalAlignment="Center" />
+                                </Grid>
+                                <TextBlock Margin="0,6,0,0"
+                                           Foreground="{DynamicResource Status}"
+                                           TextWrapping="Wrap"
+                                           Text="{Binding SearchStatus, Mode=OneWay}" />
+                                <ItemsControl Margin="0,6,0,0"
+                                              ItemsSource="{Binding SearchResults}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Margin="0,0,0,5"
+                                                    HorizontalContentAlignment="Stretch"
+                                                    Command="{Binding DataContext.JumpToSearchResultCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Background="{DynamicResource Surface.Raised}"
+                                                    BorderBrush="{DynamicResource Border.Faint}"
+                                                    BorderThickness="1"
+                                                    Padding="9,7"
+                                                    Cursor="Hand">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding SessionName}"
+                                                               FontWeight="Medium"
+                                                               Foreground="{DynamicResource Text.Primary}"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding Snippet}"
+                                                               Margin="0,2,0,0"
+                                                               Foreground="{DynamicResource Text.Muted}"
+                                                               FontSize="12"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding MatchSummary}"
+                                                               Margin="0,2,0,0"
+                                                               Foreground="{DynamicResource Text.Faint}"
+                                                               FontSize="10.5" />
+                                                </StackPanel>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <Border Margin="0,10,0,12"
+                                        BorderBrush="{DynamicResource Border.Hairline}"
+                                        BorderThickness="0,0,0,1" />
+
                                 <TextBlock Text="This session"
                                            FontWeight="Medium"
                                            Foreground="{DynamicResource Text.Primary}" />
