@@ -28,6 +28,7 @@ public partial class MainWindow : Window
     private readonly FloatingNoteViewModel _viewModel;
     private readonly DispatcherTimer _attachmentTimer = new(DispatcherPriority.Render);
     private readonly DispatcherTimer _foregroundWatchTimer = new(DispatcherPriority.Background);
+    private readonly WinEventHookService _winEventService = new();
     private Forms.NotifyIcon? _notifyIcon;
     private Forms.ContextMenuStrip? _trayMenu;
     private Drawing.Icon? _trayIcon;
@@ -39,6 +40,7 @@ public partial class MainWindow : Window
     private bool _isDragAttachInProgress;
     private string? _lastAttachedTitle;
     private IntPtr _lastForegroundHwnd;
+    private bool _isHandlingWinEvent;
 
     public MainWindow()
     {
@@ -57,6 +59,7 @@ public partial class MainWindow : Window
         _foregroundWatchTimer.Interval = ForegroundWatchInterval;
         _foregroundWatchTimer.Tick += OnForegroundWatchTick;
         _viewModel.AutoTrackForegroundChanged += OnAutoTrackForegroundChanged;
+        _winEventService.WinEventReceived += OnWinEventReceived;
 
         InitializeTrayIcon();
     }
@@ -76,6 +79,8 @@ public partial class MainWindow : Window
                 $"SessionPad could not register Ctrl+Alt+N. Win32 error: {_hotkeyService.LastRegistrationError}.");
         }
 
+        var hooksActive = _winEventService.Start();
+        ConfigureTimerIntervals(hooksActive);
         UpdateForegroundWatchTimer();
     }
 
@@ -100,6 +105,8 @@ public partial class MainWindow : Window
         _attachmentTimer.Tick -= OnAttachmentTimerTick;
         _foregroundWatchTimer.Stop();
         _foregroundWatchTimer.Tick -= OnForegroundWatchTick;
+        _winEventService.WinEventReceived -= OnWinEventReceived;
+        _winEventService.Stop();
         _windowAttachmentService.Detach("SessionPad closed.");
 
         if (_hotkeyRegistered)
@@ -516,6 +523,72 @@ public partial class MainWindow : Window
         // activateAfterAttach must stay false so we never steal focus from the
         // window the user just switched to.
         AttachToDetectedWindow(detectedWindow, activateAfterAttach: false, dragStatusOnSuccess: null);
+    }
+
+    private void OnWinEventReceived(uint eventType, IntPtr hwnd)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            try
+            {
+                Dispatcher.BeginInvoke(() => HandleWinEvent(eventType, hwnd));
+            }
+            catch (Exception ex) when (ex is InvalidOperationException)
+            {
+                Debug.WriteLine($"SessionPad could not dispatch a WinEvent: {ex.Message}");
+            }
+
+            return;
+        }
+
+        HandleWinEvent(eventType, hwnd);
+    }
+
+    private void HandleWinEvent(uint eventType, IntPtr hwnd)
+    {
+        // Guard against re-entrancy if our own repositioning triggers more events.
+        if (_isHandlingWinEvent)
+        {
+            return;
+        }
+
+        _isHandlingWinEvent = true;
+        try
+        {
+            switch (eventType)
+            {
+                case User32.EventSystemForeground:
+                    OnForegroundWatchTick(this, EventArgs.Empty);
+                    break;
+                case User32.EventSystemMinimizeStart:
+                case User32.EventSystemMinimizeEnd:
+                case User32.EventObjectDestroy:
+                case User32.EventObjectLocationChange:
+                case User32.EventObjectNameChange:
+                    if (_windowAttachmentService.HasAttachedTarget
+                        && hwnd == _windowAttachmentService.AttachedTargetHwnd)
+                    {
+                        OnAttachmentTimerTick(this, EventArgs.Empty);
+                    }
+
+                    break;
+            }
+        }
+        finally
+        {
+            _isHandlingWinEvent = false;
+        }
+    }
+
+    private void ConfigureTimerIntervals(bool hooksActive)
+    {
+        // With hooks active, polling stays only as a low-frequency safety net.
+        _attachmentTimer.Interval = hooksActive
+            ? TimeSpan.FromMilliseconds(1000)
+            : AttachmentPollInterval;
+        _foregroundWatchTimer.Interval = hooksActive
+            ? TimeSpan.FromMilliseconds(1000)
+            : ForegroundWatchInterval;
     }
 
     private void UpdateAttachmentTimer(WindowAttachmentResult result)

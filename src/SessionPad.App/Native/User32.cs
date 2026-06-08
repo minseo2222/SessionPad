@@ -7,7 +7,34 @@ internal static partial class User32
 {
     public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
+    public delegate void WinEventProc(
+        IntPtr hWinEventHook,
+        uint eventType,
+        IntPtr hwnd,
+        int idObject,
+        int idChild,
+        uint dwEventThread,
+        uint dwmsEventTime);
+
     public const int WmHotkey = 0x0312;
+
+    public const uint WineventOutofcontext = 0x0000;
+
+    public const uint WineventSkipownprocess = 0x0002;
+
+    public const uint EventSystemForeground = 0x0003;
+
+    public const uint EventSystemMinimizeStart = 0x0016;
+
+    public const uint EventSystemMinimizeEnd = 0x0017;
+
+    public const uint EventObjectDestroy = 0x8001;
+
+    public const uint EventObjectLocationChange = 0x800B;
+
+    public const uint EventObjectNameChange = 0x800C;
+
+    public const int ObjidWindow = 0;
 
     public const uint ModAlt = 0x0001;
 
@@ -83,6 +110,20 @@ internal static partial class User32
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool GetMonitorInfoW(IntPtr hMonitor, ref MonitorInfo lpmi);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr SetWinEventHook(
+        uint eventMin,
+        uint eventMax,
+        IntPtr hmodWinEventProc,
+        WinEventProc lpfnWinEventProc,
+        uint idProcess,
+        uint idThread,
+        uint dwFlags);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
 }
 
 [StructLayout(LayoutKind.Sequential)]
