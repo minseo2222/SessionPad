@@ -103,6 +103,8 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         ToggleNoteExpandCommand = new RelayCommand(ToggleNoteExpand);
         SaveNoteEditCommand = new RelayCommand(SaveNoteEdit);
         CopyNoteCommand = new RelayCommand(CopyNote);
+        MoveItemUpCommand = new RelayCommand(MoveItemUp);
+        MoveItemDownCommand = new RelayCommand(MoveItemDown);
 
         _copyToastTimer.Tick += OnCopyToastTimerTick;
         TodoItems.CollectionChanged += OnTodoItemsChanged;
@@ -150,6 +152,10 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public ICommand SaveNoteEditCommand { get; }
 
     public ICommand CopyNoteCommand { get; }
+
+    public ICommand MoveItemUpCommand { get; }
+
+    public ICommand MoveItemDownCommand { get; }
 
     public ObservableCollection<PinnedItemViewModel> PinnedItems { get; } = new();
 
@@ -845,6 +851,53 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 
         var result = _clipboardService.CopyText(noteItem.Text);
         ShowCopyFeedback(result.Message);
+    }
+
+    private void MoveItemUp(object? item)
+    {
+        MoveItem(item, -1);
+    }
+
+    private void MoveItemDown(object? item)
+    {
+        MoveItem(item, 1);
+    }
+
+    private void MoveItem(object? item, int delta)
+    {
+        switch (item)
+        {
+            case PinnedItemViewModel pinned:
+                MoveWithin(PinnedItems, pinned, delta);
+                break;
+            case TodoItemViewModel todo:
+                MoveWithin(TodoItems, todo, delta);
+                break;
+            case CommandItemViewModel command:
+                MoveWithin(CommandItems, command, delta);
+                break;
+            case NoteItemViewModel note:
+                MoveWithin(NoteItems, note, delta);
+                break;
+        }
+    }
+
+    private void MoveWithin<T>(ObservableCollection<T> collection, T item, int delta)
+    {
+        var index = collection.IndexOf(item);
+        if (index < 0)
+        {
+            return;
+        }
+
+        var target = index + delta;
+        if (target < 0 || target >= collection.Count)
+        {
+            return;
+        }
+
+        collection.Move(index, target);
+        SaveNote();
     }
 
     private void ShowCopyFeedback(string message)

@@ -52,6 +52,25 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+
+        <Style x:Key="ReorderButtonStyle"
+               TargetType="{x:Type Button}"
+               BasedOn="{StaticResource ItemActionButtonStyle}">
+            <Setter Property="Width" Value="18" />
+            <Setter Property="Height" Value="12" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+
+        <Style x:Key="EmptyStateTextStyle"
+               TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource Text.Faint}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="TextAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="20,12" />
+        </Style>
     </UserControl.Resources>
 
     <Border Background="{DynamicResource Surface.Base}"
@@ -758,6 +777,18 @@
                                 </Style.Triggers>
                             </Style>
                         </Grid.Style>
+                        <TextBlock Text="No key details yet. Add one above.">
+                            <TextBlock.Style>
+                                <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource EmptyStateTextStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding PinnedItems.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding PinnedItems}">
                                 <ItemsControl.ItemTemplate>
@@ -772,6 +803,7 @@
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
                                                 <Grid>
@@ -792,8 +824,26 @@
                                                                FontSize="13"
                                                                VerticalAlignment="Center" />
                                                 </Grid>
+                                                <StackPanel x:Name="PinnedReorder"
+                                                            Grid.Column="1"
+                                                            Opacity="0"
+                                                            VerticalAlignment="Center"
+                                                            Margin="0,0,2,0">
+                                                    <Button Style="{StaticResource ReorderButtonStyle}"
+                                                            Command="{Binding DataContext.MoveItemUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            ToolTip="Move up">
+                                                        <Path Width="10" Height="6" Data="M 1 5 L 5 1 L 9 5" Fill="Transparent" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.3" />
+                                                    </Button>
+                                                    <Button Style="{StaticResource ReorderButtonStyle}"
+                                                            Command="{Binding DataContext.MoveItemDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            ToolTip="Move down">
+                                                        <Path Width="10" Height="6" Data="M 1 1 L 5 5 L 9 1" Fill="Transparent" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.3" />
+                                                    </Button>
+                                                </StackPanel>
                                                 <Button x:Name="DeletePinnedButton"
-                                                        Grid.Column="1"
+                                                        Grid.Column="2"
                                                         Style="{StaticResource DeleteItemActionButtonStyle}"
                                                     Command="{Binding DataContext.DeletePinnedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"
@@ -815,6 +865,7 @@
                                             <Trigger SourceName="KeyCard" Property="IsMouseOver" Value="True">
                                                 <Setter TargetName="KeyCard" Property="BorderBrush" Value="{DynamicResource Border.Hairline}" />
                                                 <Setter TargetName="DeletePinnedButton" Property="Opacity" Value="1" />
+                                                <Setter TargetName="PinnedReorder" Property="Opacity" Value="1" />
                                             </Trigger>
                                         </DataTemplate.Triggers>
                                     </DataTemplate>
@@ -838,6 +889,18 @@
                                 </Style.Triggers>
                             </Style>
                         </Grid.Style>
+                        <TextBlock Text="No todos yet. Add one above.">
+                            <TextBlock.Style>
+                                <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource EmptyStateTextStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding TodoItems.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding TodoItems}">
                                 <ItemsControl.ItemTemplate>
@@ -851,6 +914,7 @@
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
                                                     <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
                                                 <CheckBox IsChecked="{Binding IsDone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -906,8 +970,26 @@
                                                         </Style>
                                                     </TextBlock.Style>
                                                 </TextBlock>
+                                                <StackPanel x:Name="TodoReorder"
+                                                            Grid.Column="2"
+                                                            Opacity="0"
+                                                            VerticalAlignment="Center"
+                                                            Margin="0,0,2,0">
+                                                    <Button Style="{StaticResource ReorderButtonStyle}"
+                                                            Command="{Binding DataContext.MoveItemUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            ToolTip="Move up">
+                                                        <Path Width="10" Height="6" Data="M 1 5 L 5 1 L 9 5" Fill="Transparent" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.3" />
+                                                    </Button>
+                                                    <Button Style="{StaticResource ReorderButtonStyle}"
+                                                            Command="{Binding DataContext.MoveItemDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            ToolTip="Move down">
+                                                        <Path Width="10" Height="6" Data="M 1 1 L 5 5 L 9 1" Fill="Transparent" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.3" />
+                                                    </Button>
+                                                </StackPanel>
                                                 <Button x:Name="DeleteTodoButton"
-                                                        Grid.Column="2"
+                                                        Grid.Column="3"
                                                         Style="{StaticResource DeleteItemActionButtonStyle}"
                                                         Command="{Binding DataContext.DeleteTodoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}"
@@ -929,6 +1011,7 @@
                                             <Trigger SourceName="TodoRow" Property="IsMouseOver" Value="True">
                                                 <Setter TargetName="TodoRow" Property="Background" Value="{DynamicResource Surface.Raised}" />
                                                 <Setter TargetName="DeleteTodoButton" Property="Opacity" Value="1" />
+                                                <Setter TargetName="TodoReorder" Property="Opacity" Value="1" />
                                             </Trigger>
                                         </DataTemplate.Triggers>
                                     </DataTemplate>
@@ -952,6 +1035,18 @@
                                 </Style.Triggers>
                             </Style>
                         </Grid.Style>
+                        <TextBlock Text="No commands yet. Add one above.">
+                            <TextBlock.Style>
+                                <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource EmptyStateTextStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CommandItems.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
                                 <ItemsControl ItemsSource="{Binding CommandItems}">
@@ -968,6 +1063,7 @@
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto" />
                                                         <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
                                                         <ColumnDefinition Width="Auto" />
                                                         <ColumnDefinition Width="Auto" />
                                                     </Grid.ColumnDefinitions>
@@ -1012,8 +1108,26 @@
                                                                        StrokeThickness="1.3" />
                                                         </Grid>
                                                     </Button>
+                                                    <StackPanel x:Name="CommandReorder"
+                                                                Grid.Column="3"
+                                                                Opacity="0"
+                                                                VerticalAlignment="Center"
+                                                                Margin="3,0,2,0">
+                                                        <Button Style="{StaticResource ReorderButtonStyle}"
+                                                                Command="{Binding DataContext.MoveItemUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                CommandParameter="{Binding}"
+                                                                ToolTip="Move up">
+                                                            <Path Width="10" Height="6" Data="M 1 5 L 5 1 L 9 5" Fill="Transparent" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.3" />
+                                                        </Button>
+                                                        <Button Style="{StaticResource ReorderButtonStyle}"
+                                                                Command="{Binding DataContext.MoveItemDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                CommandParameter="{Binding}"
+                                                                ToolTip="Move down">
+                                                            <Path Width="10" Height="6" Data="M 1 1 L 5 5 L 9 1" Fill="Transparent" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.3" />
+                                                        </Button>
+                                                    </StackPanel>
                                                     <Button x:Name="DeleteCommandButton"
-                                                            Grid.Column="3"
+                                                            Grid.Column="4"
                                                             Style="{StaticResource DeleteItemActionButtonStyle}"
                                                             Command="{Binding DataContext.DeleteCommandItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
@@ -1037,6 +1151,7 @@
                                                     <Setter TargetName="CommandCard" Property="BorderBrush" Value="{DynamicResource Border.Hairline}" />
                                                     <Setter TargetName="CopyCommandButton" Property="Opacity" Value="1" />
                                                     <Setter TargetName="DeleteCommandButton" Property="Opacity" Value="1" />
+                                                    <Setter TargetName="CommandReorder" Property="Opacity" Value="1" />
                                                 </Trigger>
                                             </DataTemplate.Triggers>
                                         </DataTemplate>
@@ -1061,6 +1176,18 @@
                                 </Style.Triggers>
                             </Style>
                         </Grid.Style>
+                        <TextBlock Text="No notes yet. Add one above.">
+                            <TextBlock.Style>
+                                <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource EmptyStateTextStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding NoteItems.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding NoteItems}">
                                 <ItemsControl.ItemTemplate>
@@ -1082,6 +1209,7 @@
                                                         <ColumnDefinition Width="*" />
                                                         <ColumnDefinition Width="Auto" />
                                                         <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
                                                     </Grid.ColumnDefinitions>
                                                     <Button Command="{Binding DataContext.ToggleNoteExpandCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
@@ -1099,7 +1227,25 @@
                                                                    VerticalAlignment="Top"
                                                                    Margin="0,0,8,0" />
                                                     </Button>
-                                                    <Button Grid.Column="1"
+                                                    <StackPanel x:Name="NoteReorder"
+                                                                Grid.Column="1"
+                                                                Opacity="0"
+                                                                VerticalAlignment="Top"
+                                                                Margin="0,1,2,0">
+                                                        <Button Style="{StaticResource ReorderButtonStyle}"
+                                                                Command="{Binding DataContext.MoveItemUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                CommandParameter="{Binding}"
+                                                                ToolTip="Move up">
+                                                            <Path Width="10" Height="6" Data="M 1 5 L 5 1 L 9 5" Fill="Transparent" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.3" />
+                                                        </Button>
+                                                        <Button Style="{StaticResource ReorderButtonStyle}"
+                                                                Command="{Binding DataContext.MoveItemDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                CommandParameter="{Binding}"
+                                                                ToolTip="Move down">
+                                                            <Path Width="10" Height="6" Data="M 1 1 L 5 5 L 9 1" Fill="Transparent" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.3" />
+                                                        </Button>
+                                                    </StackPanel>
+                                                    <Button Grid.Column="2"
                                                             Command="{Binding DataContext.ToggleNoteExpandCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
                                                             Width="23"
@@ -1123,7 +1269,7 @@
                                                               StrokeThickness="1.5" />
                                                     </Button>
                                                     <Button x:Name="DeleteNoteButton"
-                                                            Grid.Column="2"
+                                                            Grid.Column="3"
                                                             Style="{StaticResource DeleteItemActionButtonStyle}"
                                                             Command="{Binding DataContext.DeleteNoteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
@@ -1156,7 +1302,13 @@
                                                              VerticalScrollBarVisibility="Auto"
                                                              MinHeight="90"
                                                              MaxHeight="180"
-                                                             FontSize="13" />
+                                                             FontSize="13">
+                                                        <TextBox.InputBindings>
+                                                            <KeyBinding Key="Escape"
+                                                                        Command="{Binding DataContext.ToggleNoteExpandCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                        CommandParameter="{Binding}" />
+                                                        </TextBox.InputBindings>
+                                                    </TextBox>
                                                     <StackPanel Grid.Row="1"
                                                                 Orientation="Horizontal"
                                                                 HorizontalAlignment="Right"
@@ -1189,6 +1341,9 @@
                                             <Trigger SourceName="NoteCard" Property="IsMouseOver" Value="True">
                                                 <Setter TargetName="NoteCard" Property="BorderBrush" Value="{DynamicResource Border.Hairline}" />
                                                 <Setter TargetName="DeleteNoteButton" Property="Opacity" Value="1" />
+                                            </Trigger>
+                                            <Trigger SourceName="NoteCard" Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="NoteReorder" Property="Opacity" Value="1" />
                                             </Trigger>
                                             <DataTrigger Binding="{Binding IsExpanded}" Value="True">
                                                 <Setter TargetName="NoteExpandedPanel" Property="Visibility" Value="Visible" />
@@ -1301,31 +1456,35 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <TextBlock Foreground="{DynamicResource Text.Faint}"
-                                       FontSize="11"
-                                       Visibility="Collapsed">
-                                <Run Text="{Binding CurrentSessionDisplayName, Mode=OneWay}" />
-                                <Run Text=" · " />
+                            <Border Width="5"
+                                    Height="5"
+                                    CornerRadius="3"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,6,0">
+                                <Border.Style>
+                                    <Style TargetType="{x:Type Border}">
+                                        <Setter Property="Background" Value="{DynamicResource Text.Faint}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsAttachedToWindow}" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource Status.Success}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                            </Border>
+                            <TextBlock FontSize="11">
                                 <TextBlock.Style>
                                     <Style TargetType="{x:Type TextBlock}">
-                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Setter Property="Foreground" Value="{DynamicResource Text.Faint}" />
+                                        <Setter Property="Text" Value="not attached" />
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsCurrentSessionNamed}" Value="True">
-                                                <Setter Property="Visibility" Value="Visible" />
+                                            <DataTrigger Binding="{Binding IsAttachedToWindow}" Value="True">
+                                                <Setter Property="Text" Value="attached" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <Border Width="5"
-                                    Height="5"
-                                    Background="{DynamicResource Status.Success}"
-                                    CornerRadius="3"
-                                    VerticalAlignment="Center"
-                                    Margin="0,0,6,0" />
-                            <TextBlock Foreground="{DynamicResource Text.Faint}"
-                                       FontSize="11"
-                                       Text="attached" />
                         </StackPanel>
                     </Grid>
                 </Border>
