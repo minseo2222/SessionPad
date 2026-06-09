@@ -8,6 +8,12 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>Assets\SessionPad.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- This is a WPF-first app (WinForms is only used for the tray icon). DPI awareness
+         is declared in app.manifest, which is the correct mechanism for WPF; the WinForms
+         ApplicationHighDpiMode path does not run because the entry point is WPF. Suppress
+         the WinForms-only WFO0003 manifest-DPI advisory. -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
