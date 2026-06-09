@@ -13,7 +13,10 @@ public sealed class NoteStorageService
         PropertyNameCaseInsensitive = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() }
+        // Tolerant converter first so an unknown NotePanelState falls back to the
+        // default instead of throwing (and losing the whole note); the string enum
+        // converter still handles any other enums.
+        Converters = { new TolerantPanelStateConverter(), new JsonStringEnumConverter() }
     };
 
     private const int MaxBackupsPerSession = 5;

@@ -123,11 +123,10 @@ public class CompatibilityTests
     }
 
     [Fact]
-    public void Unknown_panel_state_value_currently_loses_the_note_HAZARD()
+    public void Unknown_panel_state_value_preserves_the_note()
     {
-        // CURRENT BEHAVIOR (data-loss hazard): a panelState written by a newer version
-        // is rejected by the enum converter, so LoadSessionNote returns null and the
-        // entire note is lost. Stage B makes loading tolerant and flips this assertion.
+        // A panelState written by a newer version must not destroy the whole note;
+        // the tolerant converter falls back to the default panel state.
         using var dir = new TempDir();
         WriteNoteFile(dir.Path, "abc", """
         { "sessionId": "abc", "panelState": "ExpandedNote",
@@ -137,6 +136,8 @@ public class CompatibilityTests
 
         var loaded = Store(dir.Path).LoadSessionNote(Session("abc"));
 
-        Assert.Null(loaded);
+        Assert.NotNull(loaded);
+        Assert.Equal("must survive", loaded!.Sections.Notes.Single().Text);
+        Assert.Equal(NotePanelState.CompactNote, loaded.PanelState);
     }
 }
