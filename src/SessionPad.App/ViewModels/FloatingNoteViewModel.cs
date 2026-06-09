@@ -1173,6 +1173,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         {
             Debug.WriteLine($"SessionPad could not save the current note: {ex.Message}");
             CurrentSessionStatus = $"Save failed: {ex.Message}";
+            ShowStatusToast($"Couldn't save note: {ex.Message}");
         }
     }
 
