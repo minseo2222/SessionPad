@@ -709,10 +709,20 @@ public partial class MainWindow : Window
         _lastAttachedTitle = windowInfo.Title;
         _viewModel.SetLastDetectedWindow(windowInfo);
 
-        if (CanUseWindowSession(windowInfo))
+        if (!CanUseWindowSession(windowInfo))
         {
-            LoadWindowSessionSafely(windowInfo);
+            return;
         }
+
+        // The raw title changed but still resolves to the current pad (e.g. the same
+        // VS Code project, or only whitespace/case differs) — do not reload.
+        var candidateKey = _sessionMatcher.CreateMatchKey(windowInfo);
+        if (string.Equals(candidateKey, _viewModel.CurrentSessionMatchKey, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        LoadWindowSessionSafely(windowInfo);
     }
 
     private void HideSafely()
