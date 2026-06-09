@@ -17,6 +17,7 @@ public partial class MainWindow : Window
 {
     private static readonly TimeSpan AttachmentPollInterval = TimeSpan.FromMilliseconds(60);
     private static readonly TimeSpan ForegroundWatchInterval = TimeSpan.FromMilliseconds(400);
+    private static readonly TimeSpan TitleSwitchDebounceInterval = TimeSpan.FromMilliseconds(400);
     private const int DragAttachThresholdPx = 48;
 
     private readonly HotkeyService _hotkeyService = new();
@@ -28,6 +29,7 @@ public partial class MainWindow : Window
     private readonly FloatingNoteViewModel _viewModel;
     private readonly DispatcherTimer _attachmentTimer = new(DispatcherPriority.Render);
     private readonly DispatcherTimer _foregroundWatchTimer = new(DispatcherPriority.Background);
+    private readonly DispatcherTimer _titleSwitchDebounceTimer = new(DispatcherPriority.Background);
     private readonly WinEventHookService _winEventService = new();
     private Forms.NotifyIcon? _notifyIcon;
     private Forms.ContextMenuStrip? _trayMenu;
@@ -58,6 +60,8 @@ public partial class MainWindow : Window
 
         _foregroundWatchTimer.Interval = ForegroundWatchInterval;
         _foregroundWatchTimer.Tick += OnForegroundWatchTick;
+        _titleSwitchDebounceTimer.Interval = TitleSwitchDebounceInterval;
+        _titleSwitchDebounceTimer.Tick += OnTitleSwitchDebounceTick;
         _viewModel.AutoTrackForegroundChanged += OnAutoTrackForegroundChanged;
         _viewModel.HotkeyChangeRequested += OnHotkeyChangeRequested;
         _winEventService.WinEventReceived += OnWinEventReceived;
@@ -108,6 +112,8 @@ public partial class MainWindow : Window
         _attachmentTimer.Tick -= OnAttachmentTimerTick;
         _foregroundWatchTimer.Stop();
         _foregroundWatchTimer.Tick -= OnForegroundWatchTick;
+        _titleSwitchDebounceTimer.Stop();
+        _titleSwitchDebounceTimer.Tick -= OnTitleSwitchDebounceTick;
         _winEventService.WinEventReceived -= OnWinEventReceived;
         _winEventService.Stop();
         _windowAttachmentService.Detach("SessionPad closed.");
@@ -722,6 +728,51 @@ public partial class MainWindow : Window
             return;
         }
 
+        // Coalesce rapid title churn (e.g. a shell that puts the running command or path
+        // in its title): perform the actual switch only after the title settles.
+        _titleSwitchDebounceTimer.Stop();
+        _titleSwitchDebounceTimer.Start();
+    }
+
+    private void OnTitleSwitchDebounceTick(object? sender, EventArgs e)
+    {
+        _titleSwitchDebounceTimer.Stop();
+
+        if (_isDragAttachInProgress || _userHiddenToTray || !IsVisible)
+        {
+            return;
+        }
+
+        var attachedHwnd = _windowAttachmentService.AttachedTargetHwnd;
+        if (attachedHwnd == IntPtr.Zero)
+        {
+            return;
+        }
+
+        DetectedWindowInfo windowInfo;
+        try
+        {
+            windowInfo = _windowDetectionService.GetWindowInfo(attachedHwnd, _windowHandle);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"SessionPad could not read the settled window title: {ex}");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(windowInfo.Title) || !CanUseWindowSession(windowInfo))
+        {
+            return;
+        }
+
+        // Re-check against the settled title: it may have returned to the current pad.
+        var candidateKey = _sessionMatcher.CreateMatchKey(windowInfo);
+        if (string.Equals(candidateKey, _viewModel.CurrentSessionMatchKey, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _viewModel.SetLastDetectedWindow(windowInfo);
         LoadWindowSessionSafely(windowInfo);
     }
 
