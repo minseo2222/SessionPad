@@ -222,6 +222,16 @@ public sealed class SessionMatcher
         return $"{processName.ToLowerInvariant()}|{normalizedTitle.ToLowerInvariant()}";
     }
 
+    /// <summary>
+    /// Computes the match key a window would resolve to, without creating or
+    /// persisting any session. Used to decide whether a title change actually
+    /// points at a different pad.
+    /// </summary>
+    public string CreateMatchKey(DetectedWindowInfo window)
+    {
+        return CreateMatchKey(CreateIdentity(window));
+    }
+
     private static WindowIdentity CreateIdentity(DetectedWindowInfo window)
     {
         var processName = NormalizeProcessName(window.ProcessName);

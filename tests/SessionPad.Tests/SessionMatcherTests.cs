@@ -40,6 +40,33 @@ public class SessionMatcherTests
     }
 
     [Fact]
+    public void MatchKey_from_window_is_consistent_and_side_effect_free()
+    {
+        using var dir = new TempDir();
+        var (matcher, storage) = Create(dir.Path);
+
+        var fileA = matcher.CreateMatchKey(Win.Make("code", "fileA.cs - myproj - Visual Studio Code"));
+        var fileB = matcher.CreateMatchKey(Win.Make("code", "fileB.ts - myproj - Visual Studio Code"));
+        var other = matcher.CreateMatchKey(Win.Make("code", "x.cs - otherproj - Visual Studio Code"));
+
+        Assert.Equal(fileA, fileB);
+        Assert.NotEqual(fileA, other);
+        Assert.Empty(storage.LoadSessionIndex().Sessions);
+    }
+
+    [Fact]
+    public void MatchKey_from_window_collapses_volatile_whitespace_and_case()
+    {
+        using var dir = new TempDir();
+        var (matcher, _) = Create(dir.Path);
+
+        var plain = matcher.CreateMatchKey(Win.Make("pwsh", "MyRepo"));
+        var padded = matcher.CreateMatchKey(Win.Make("pwsh", "  MyRepo  "));
+
+        Assert.Equal(plain, padded);
+    }
+
+    [Fact]
     public void Ide_matches_by_project_not_by_file()
     {
         using var dir = new TempDir();
