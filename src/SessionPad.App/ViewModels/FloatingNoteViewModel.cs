@@ -1119,6 +1119,11 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private void ShowCopyFeedback(string message)
     {
         LastCommandCopyStatus = message;
+        ShowStatusToast(message);
+    }
+
+    private void ShowStatusToast(string message)
+    {
         CopyToastText = message;
         ShowCopyToast = true;
 
