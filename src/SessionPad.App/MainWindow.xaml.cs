@@ -83,6 +83,7 @@ public partial class MainWindow : Window
         {
             Debug.WriteLine(
                 $"SessionPad could not register {hotkey.Display}. Win32 error: {_hotkeyService.LastRegistrationError}.");
+            _viewModel.NotifyHotkeyRegistrationFailed(hotkey.Display, _hotkeyService.LastRegistrationError);
         }
 
         var hooksActive = _winEventService.Start();

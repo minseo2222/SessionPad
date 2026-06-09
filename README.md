@@ -148,6 +148,8 @@ SessionPad v0.1 is local-first:
 - Clipboard is only written when the user clicks Copy on a command.
 - Clipboard is not read.
 - Only user-entered notes are stored.
+- Local errors (e.g. a failed save or an unavailable shortcut) are shown on screen
+  only; nothing is reported or sent anywhere.
 
 ## Known Limitations
 

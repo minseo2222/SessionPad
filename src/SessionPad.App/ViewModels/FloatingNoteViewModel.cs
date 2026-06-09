@@ -1116,9 +1116,21 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
             $"Could not set that shortcut ({error ?? "unknown error"}). Still using {_appliedHotkey.Display}.";
     }
 
+    public void NotifyHotkeyRegistrationFailed(string display, int win32Error)
+    {
+        HotkeyStatus =
+            $"Could not register {display} (Win32 error {win32Error}). It may be in use by another app.";
+        ShowStatusToast($"Attach shortcut {display} is unavailable — it may be in use by another app.");
+    }
+
     private void ShowCopyFeedback(string message)
     {
         LastCommandCopyStatus = message;
+        ShowStatusToast(message);
+    }
+
+    private void ShowStatusToast(string message)
+    {
         CopyToastText = message;
         ShowCopyToast = true;
 
@@ -1161,6 +1173,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         {
             Debug.WriteLine($"SessionPad could not save the current note: {ex.Message}");
             CurrentSessionStatus = $"Save failed: {ex.Message}";
+            ShowStatusToast($"Couldn't save note: {ex.Message}");
         }
     }
 
