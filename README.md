@@ -160,6 +160,8 @@ SessionPad v0.1 is local-first:
 - Automatic foreground-change restore is available as an opt-in setting
   ("Auto-track focused window"), off by default.
 - Window following uses WinEvent hooks, with low-frequency polling as a fallback.
+- Rapid window-title changes (e.g. a shell that puts the running command in its title)
+  are debounced, and title changes that still resolve to the same pad no longer switch.
 - The attach shortcut is configurable from a preset list, not free-form key capture.
 - Multi-monitor and DPI behavior should still be manually tested.
 - No installer or MSIX package yet.
