@@ -151,3 +151,31 @@ Important Rule
 Do not persist HWND.
 
 HWND is a runtime handle only.
+
+## Schema Versioning & Compatibility
+
+`SchemaVersion` is stored on `SessionNote` and `SessionIndex` but is informational:
+there is no version-branching migration code. Loading instead relies on tolerant
+deserialization, and this contract is locked down by tests in
+`tests/SessionPad.Tests/CompatibilityTests.cs`.
+
+Rules for changing the on-disk shape:
+
+- **Add fields additively only.** New fields must have a sensible default so older
+  files (which lack them) load unchanged. Missing fields fall back to their model
+  default (e.g. `SchemaVersion` → 1, `PanelState` → `CompactNote`, `SortOrder` → 0).
+- **Never remove or rename a field** without an explicit migration. Doing so silently
+  drops user data.
+- **Loading is forward/backward tolerant.** A future `SchemaVersion` still loads, and
+  unknown JSON properties are ignored without data loss.
+- **Unknown enum values do not destroy the note.** A `PanelState` value this build does
+  not recognize (e.g. one added by a newer version) falls back to the default via
+  `TolerantPanelStateConverter`, so the rest of the note is preserved rather than lost.
+- **Corrupt or partial files degrade gracefully.** Unreadable note JSON loads as
+  `null` (the app recreates a default note) and an unreadable session index loads as
+  empty — never a crash.
+
+Separately, window-identity matching has its own `MatchVersion` (1 → 2): legacy v1
+IDE sessions are reused and migrated to v2 project-level matching by `SessionMatcher`
+(see `tests/SessionPad.Tests/SessionMatcherTests.cs`). This is identity matching, not
+the storage schema, but follows the same "reuse existing data, never lose it" intent.
