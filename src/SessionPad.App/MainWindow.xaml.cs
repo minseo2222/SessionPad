@@ -16,6 +16,7 @@ namespace SessionPad.App;
 public partial class MainWindow : Window
 {
     private static readonly TimeSpan AttachmentPollInterval = TimeSpan.FromMilliseconds(60);
+    private static readonly TimeSpan ForegroundWatchInterval = TimeSpan.FromMilliseconds(400);
     private const int DragAttachThresholdPx = 48;
 
     private readonly HotkeyService _hotkeyService = new();
@@ -26,6 +27,8 @@ public partial class MainWindow : Window
     private readonly SessionMatcher _sessionMatcher;
     private readonly FloatingNoteViewModel _viewModel;
     private readonly DispatcherTimer _attachmentTimer = new(DispatcherPriority.Render);
+    private readonly DispatcherTimer _foregroundWatchTimer = new(DispatcherPriority.Background);
+    private readonly WinEventHookService _winEventService = new();
     private Forms.NotifyIcon? _notifyIcon;
     private Forms.ContextMenuStrip? _trayMenu;
     private Drawing.Icon? _trayIcon;
@@ -36,6 +39,8 @@ public partial class MainWindow : Window
     private bool _userHiddenToTray;
     private bool _isDragAttachInProgress;
     private string? _lastAttachedTitle;
+    private IntPtr _lastForegroundHwnd;
+    private bool _isHandlingWinEvent;
 
     public MainWindow()
     {
@@ -51,6 +56,12 @@ public partial class MainWindow : Window
         _attachmentTimer.Interval = AttachmentPollInterval;
         _attachmentTimer.Tick += OnAttachmentTimerTick;
 
+        _foregroundWatchTimer.Interval = ForegroundWatchInterval;
+        _foregroundWatchTimer.Tick += OnForegroundWatchTick;
+        _viewModel.AutoTrackForegroundChanged += OnAutoTrackForegroundChanged;
+        _viewModel.HotkeyChangeRequested += OnHotkeyChangeRequested;
+        _winEventService.WinEventReceived += OnWinEventReceived;
+
         InitializeTrayIcon();
     }
 
@@ -62,12 +73,17 @@ public partial class MainWindow : Window
         _source = HwndSource.FromHwnd(_windowHandle);
         _source?.AddHook(OnWindowMessage);
 
-        _hotkeyRegistered = _hotkeyService.Register(_windowHandle);
+        var hotkey = _viewModel.AppliedHotkey;
+        _hotkeyRegistered = _hotkeyService.Register(_windowHandle, hotkey.Modifiers, hotkey.VirtualKey);
         if (!_hotkeyRegistered)
         {
             Debug.WriteLine(
-                $"SessionPad could not register Ctrl+Alt+N. Win32 error: {_hotkeyService.LastRegistrationError}.");
+                $"SessionPad could not register {hotkey.Display}. Win32 error: {_hotkeyService.LastRegistrationError}.");
         }
+
+        var hooksActive = _winEventService.Start();
+        ConfigureTimerIntervals(hooksActive);
+        UpdateForegroundWatchTimer();
     }
 
     protected override void OnClosing(CancelEventArgs e)
@@ -86,8 +102,14 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _viewModel.DeleteLocalDataRequested -= OnDeleteLocalDataRequested;
+        _viewModel.AutoTrackForegroundChanged -= OnAutoTrackForegroundChanged;
+        _viewModel.HotkeyChangeRequested -= OnHotkeyChangeRequested;
         _attachmentTimer.Stop();
         _attachmentTimer.Tick -= OnAttachmentTimerTick;
+        _foregroundWatchTimer.Stop();
+        _foregroundWatchTimer.Tick -= OnForegroundWatchTick;
+        _winEventService.WinEventReceived -= OnWinEventReceived;
+        _winEventService.Stop();
         _windowAttachmentService.Detach("SessionPad closed.");
 
         if (_hotkeyRegistered)
@@ -285,6 +307,38 @@ public partial class MainWindow : Window
         AttachToDetectedWindow(detectedWindow, activateAfterAttach: true, dragStatusOnSuccess: null);
     }
 
+    private void OnHotkeyChangeRequested(object? sender, Models.HotkeyOption option)
+    {
+        if (_windowHandle == IntPtr.Zero)
+        {
+            _viewModel.NotifyHotkeyApplied(false, "window not ready");
+            return;
+        }
+
+        if (_hotkeyRegistered)
+        {
+            _hotkeyService.Unregister(_windowHandle);
+            _hotkeyRegistered = false;
+        }
+
+        if (_hotkeyService.Register(_windowHandle, option.Modifiers, option.VirtualKey))
+        {
+            _hotkeyRegistered = true;
+            _viewModel.NotifyHotkeyApplied(true, null);
+            return;
+        }
+
+        var error = _hotkeyService.LastRegistrationError;
+
+        // Re-register the previously applied hotkey so SessionPad stays usable.
+        var previous = _viewModel.AppliedHotkey;
+        _hotkeyRegistered = _hotkeyService.Register(
+            _windowHandle,
+            previous.Modifiers,
+            previous.VirtualKey);
+        _viewModel.NotifyHotkeyApplied(false, $"Win32 error {error}");
+    }
+
     private void TryAttachToNearestWindowAfterDrag()
     {
         DetectedWindowInfo? detectedWindow;
@@ -418,6 +472,158 @@ public partial class MainWindow : Window
         UpdateAttachmentTimer(attachmentResult);
         ApplyAttachmentVisibility(attachmentResult);
         SwitchSessionIfAttachedTitleChanged(attachmentResult);
+    }
+
+    private void OnAutoTrackForegroundChanged(object? sender, bool enabled)
+    {
+        _viewModel.SetDragAttachStatus(enabled
+            ? "Auto-tracking on. SessionPad follows the focused window."
+            : "Auto-tracking off.");
+        UpdateForegroundWatchTimer();
+    }
+
+    private void UpdateForegroundWatchTimer()
+    {
+        if (_viewModel.AutoTrackForeground)
+        {
+            if (!_foregroundWatchTimer.IsEnabled)
+            {
+                _foregroundWatchTimer.Start();
+            }
+
+            return;
+        }
+
+        if (_foregroundWatchTimer.IsEnabled)
+        {
+            _foregroundWatchTimer.Stop();
+        }
+
+        _lastForegroundHwnd = IntPtr.Zero;
+    }
+
+    private void OnForegroundWatchTick(object? sender, EventArgs e)
+    {
+        if (!_viewModel.AutoTrackForeground)
+        {
+            _foregroundWatchTimer.Stop();
+            return;
+        }
+
+        // Suppress automatic switching while the user hid SessionPad to the tray
+        // or is dragging it to attach manually.
+        if (_userHiddenToTray || _isDragAttachInProgress)
+        {
+            return;
+        }
+
+        DetectedWindowInfo detectedWindow;
+        try
+        {
+            detectedWindow = _windowDetectionService.GetForegroundWindowInfo(_windowHandle);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"SessionPad auto-track could not read the foreground window: {ex}");
+            return;
+        }
+
+        if (detectedWindow.Hwnd == IntPtr.Zero || detectedWindow.IsCurrentProcessWindow)
+        {
+            return;
+        }
+
+        // Already attached to and following this window; the attachment timer handles it.
+        if (_windowAttachmentService.HasAttachedTarget
+            && detectedWindow.Hwnd == _windowAttachmentService.AttachedTargetHwnd)
+        {
+            _lastForegroundHwnd = detectedWindow.Hwnd;
+            return;
+        }
+
+        // Only attempt once per distinct foreground window to avoid repeated retries.
+        if (detectedWindow.Hwnd == _lastForegroundHwnd)
+        {
+            return;
+        }
+
+        if (!CanUseWindowSession(detectedWindow))
+        {
+            return;
+        }
+
+        _lastForegroundHwnd = detectedWindow.Hwnd;
+        _viewModel.SetLastDetectedWindow(detectedWindow);
+
+        // activateAfterAttach must stay false so we never steal focus from the
+        // window the user just switched to.
+        AttachToDetectedWindow(detectedWindow, activateAfterAttach: false, dragStatusOnSuccess: null);
+    }
+
+    private void OnWinEventReceived(uint eventType, IntPtr hwnd)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            try
+            {
+                Dispatcher.BeginInvoke(() => HandleWinEvent(eventType, hwnd));
+            }
+            catch (Exception ex) when (ex is InvalidOperationException)
+            {
+                Debug.WriteLine($"SessionPad could not dispatch a WinEvent: {ex.Message}");
+            }
+
+            return;
+        }
+
+        HandleWinEvent(eventType, hwnd);
+    }
+
+    private void HandleWinEvent(uint eventType, IntPtr hwnd)
+    {
+        // Guard against re-entrancy if our own repositioning triggers more events.
+        if (_isHandlingWinEvent)
+        {
+            return;
+        }
+
+        _isHandlingWinEvent = true;
+        try
+        {
+            switch (eventType)
+            {
+                case User32.EventSystemForeground:
+                    OnForegroundWatchTick(this, EventArgs.Empty);
+                    break;
+                case User32.EventSystemMinimizeStart:
+                case User32.EventSystemMinimizeEnd:
+                case User32.EventObjectDestroy:
+                case User32.EventObjectLocationChange:
+                case User32.EventObjectNameChange:
+                    if (_windowAttachmentService.HasAttachedTarget
+                        && hwnd == _windowAttachmentService.AttachedTargetHwnd)
+                    {
+                        OnAttachmentTimerTick(this, EventArgs.Empty);
+                    }
+
+                    break;
+            }
+        }
+        finally
+        {
+            _isHandlingWinEvent = false;
+        }
+    }
+
+    private void ConfigureTimerIntervals(bool hooksActive)
+    {
+        // With hooks active, polling stays only as a low-frequency safety net.
+        _attachmentTimer.Interval = hooksActive
+            ? TimeSpan.FromMilliseconds(1000)
+            : AttachmentPollInterval;
+        _foregroundWatchTimer.Interval = hooksActive
+            ? TimeSpan.FromMilliseconds(1000)
+            : ForegroundWatchInterval;
     }
 
     private void UpdateAttachmentTimer(WindowAttachmentResult result)

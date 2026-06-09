@@ -8,13 +8,24 @@ using System.Text.Json;
 using System.Windows.Input;
 using System.Windows.Threading;
 using SessionPad.App.Models;
+using SessionPad.App.Native;
 using SessionPad.App.Services;
 
 namespace SessionPad.App.ViewModels;
 
 public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 {
+    private static readonly HotkeyOption[] HotkeyPresets =
+    [
+        new("Ctrl+Alt+N", "Ctrl + Alt + N", User32.ModControl | User32.ModAlt, 0x4E),
+        new("Ctrl+Shift+N", "Ctrl + Shift + N", User32.ModControl | User32.ModShift, 0x4E),
+        new("Ctrl+Alt+S", "Ctrl + Alt + S", User32.ModControl | User32.ModAlt, 0x53),
+        new("Ctrl+Alt+Space", "Ctrl + Alt + Space", User32.ModControl | User32.ModAlt, 0x20),
+        new("Ctrl+Shift+Space", "Ctrl + Shift + Space", User32.ModControl | User32.ModShift, 0x20),
+    ];
+
     private readonly NoteStorageService _storageService;
+    private readonly SessionMatcher _sessionMatcher;
     private readonly LocalDataService _localDataService;
     private readonly ClipboardService _clipboardService;
     private readonly StartupService _startupService = new();
@@ -49,6 +60,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string _activeNoteTab = "Key";
     private bool _startOnLogin;
     private bool _isDarkTheme;
+    private bool _autoTrackForeground;
     private bool _showCopyToast;
     private bool _isCurrentSessionPinned;
     private bool _isSettingsOpen;
@@ -57,6 +69,11 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string _newTodoText = string.Empty;
     private string _newCommandText = string.Empty;
     private string _newNoteText = string.Empty;
+    private string _searchQuery = string.Empty;
+    private string _searchStatus = "Type a word, then press Enter to search your notes.";
+    private HotkeyOption _selectedHotkey;
+    private HotkeyOption _appliedHotkey;
+    private string _hotkeyStatus;
 
     public FloatingNoteViewModel()
         : this(new NoteStorageService(), new LocalDataService(), new ClipboardService())
@@ -74,6 +91,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         ClipboardService clipboardService)
     {
         _storageService = storageService;
+        _sessionMatcher = new SessionMatcher(storageService);
         _localDataService = localDataService;
         _clipboardService = clipboardService;
         _startOnLogin = _startupService.IsEnabled();
@@ -82,6 +100,12 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
             _themeService.CurrentTheme,
             ThemeService.DarkThemeName,
             StringComparison.OrdinalIgnoreCase);
+        _autoTrackForeground = _settingsService.LoadAutoTrackForeground();
+
+        var hotkeyToken = _settingsService.LoadHotkey();
+        _appliedHotkey = Array.Find(HotkeyPresets, option => option.Token == hotkeyToken) ?? HotkeyPresets[0];
+        _selectedHotkey = _appliedHotkey;
+        _hotkeyStatus = $"Current: {_appliedHotkey.Display}";
 
         ExpandCommand = new RelayCommand(() => PanelState = NotePanelState.CompactNote);
         CollapseCommand = new RelayCommand(() => PanelState = NotePanelState.DockedTab);
@@ -103,6 +127,12 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         ToggleNoteExpandCommand = new RelayCommand(ToggleNoteExpand);
         SaveNoteEditCommand = new RelayCommand(SaveNoteEdit);
         CopyNoteCommand = new RelayCommand(CopyNote);
+        MoveItemUpCommand = new RelayCommand(MoveItemUp);
+        MoveItemDownCommand = new RelayCommand(MoveItemDown);
+        SearchCommand = new RelayCommand(RunSearch);
+        ClearSearchCommand = new RelayCommand(ClearSearch);
+        JumpToSearchResultCommand = new RelayCommand(JumpToSearchResult);
+        ApplyHotkeyCommand = new RelayCommand(ApplyHotkey);
 
         _copyToastTimer.Tick += OnCopyToastTimerTick;
         TodoItems.CollectionChanged += OnTodoItemsChanged;
@@ -112,6 +142,10 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public event EventHandler? DeleteLocalDataRequested;
+
+    public event EventHandler<bool>? AutoTrackForegroundChanged;
+
+    public event EventHandler<HotkeyOption>? HotkeyChangeRequested;
 
     public ICommand ExpandCommand { get; }
 
@@ -150,6 +184,36 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public ICommand SaveNoteEditCommand { get; }
 
     public ICommand CopyNoteCommand { get; }
+
+    public ICommand MoveItemUpCommand { get; }
+
+    public ICommand MoveItemDownCommand { get; }
+
+    public ICommand SearchCommand { get; }
+
+    public ICommand ClearSearchCommand { get; }
+
+    public ICommand JumpToSearchResultCommand { get; }
+
+    public ObservableCollection<SearchResultViewModel> SearchResults { get; } = new();
+
+    public ICommand ApplyHotkeyCommand { get; }
+
+    public IReadOnlyList<HotkeyOption> HotkeyOptions => HotkeyPresets;
+
+    public HotkeyOption SelectedHotkey
+    {
+        get => _selectedHotkey;
+        set => SetField(ref _selectedHotkey, value);
+    }
+
+    public HotkeyOption AppliedHotkey => _appliedHotkey;
+
+    public string HotkeyStatus
+    {
+        get => _hotkeyStatus;
+        private set => SetField(ref _hotkeyStatus, value);
+    }
 
     public ObservableCollection<PinnedItemViewModel> PinnedItems { get; } = new();
 
@@ -343,6 +407,23 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool AutoTrackForeground
+    {
+        get => _autoTrackForeground;
+        set
+        {
+            if (_autoTrackForeground == value)
+            {
+                return;
+            }
+
+            _autoTrackForeground = value;
+            _settingsService.SaveAutoTrackForeground(value);
+            OnPropertyChanged();
+            AutoTrackForegroundChanged?.Invoke(this, value);
+        }
+    }
+
     public string LastCommandCopyStatus
     {
         get => _lastCommandCopyStatus;
@@ -431,6 +512,18 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     {
         get => _newNoteText;
         set => SetField(ref _newNoteText, value);
+    }
+
+    public string SearchQuery
+    {
+        get => _searchQuery;
+        set => SetField(ref _searchQuery, value);
+    }
+
+    public string SearchStatus
+    {
+        get => _searchStatus;
+        private set => SetField(ref _searchStatus, value);
     }
 
     public void SetLastDetectedWindow(DetectedWindowInfo detectedWindow)
@@ -845,6 +938,182 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 
         var result = _clipboardService.CopyText(noteItem.Text);
         ShowCopyFeedback(result.Message);
+    }
+
+    private void MoveItemUp(object? item)
+    {
+        MoveItem(item, -1);
+    }
+
+    private void MoveItemDown(object? item)
+    {
+        MoveItem(item, 1);
+    }
+
+    private void MoveItem(object? item, int delta)
+    {
+        switch (item)
+        {
+            case PinnedItemViewModel pinned:
+                MoveWithin(PinnedItems, pinned, delta);
+                break;
+            case TodoItemViewModel todo:
+                MoveWithin(TodoItems, todo, delta);
+                break;
+            case CommandItemViewModel command:
+                MoveWithin(CommandItems, command, delta);
+                break;
+            case NoteItemViewModel note:
+                MoveWithin(NoteItems, note, delta);
+                break;
+        }
+    }
+
+    private void MoveWithin<T>(ObservableCollection<T> collection, T item, int delta)
+    {
+        var index = collection.IndexOf(item);
+        if (index < 0)
+        {
+            return;
+        }
+
+        var target = index + delta;
+        if (target < 0 || target >= collection.Count)
+        {
+            return;
+        }
+
+        collection.Move(index, target);
+        SaveNote();
+    }
+
+    private void RunSearch()
+    {
+        SearchResults.Clear();
+        var query = (SearchQuery ?? string.Empty).Trim();
+        if (query.Length == 0)
+        {
+            SearchStatus = "Type a word, then press Enter to search your notes.";
+            return;
+        }
+
+        try
+        {
+            foreach (var entry in _storageService.LoadAllNotes())
+            {
+                var match = FindFirstMatch(entry.Note, query);
+                if (match is null)
+                {
+                    continue;
+                }
+
+                SearchResults.Add(new SearchResultViewModel(
+                    entry.Session,
+                    entry.DisplayName,
+                    match.Section,
+                    match.Text,
+                    match.Total));
+            }
+
+            SearchStatus = SearchResults.Count == 0
+                ? $"No matches for \"{query}\"."
+                : $"{SearchResults.Count} session(s) matched \"{query}\".";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            Debug.WriteLine($"SessionPad search failed: {ex.Message}");
+            SearchStatus = $"Search failed: {ex.Message}";
+        }
+    }
+
+    private void ClearSearch()
+    {
+        SearchQuery = string.Empty;
+        SearchResults.Clear();
+        SearchStatus = "Type a word, then press Enter to search your notes.";
+    }
+
+    private void JumpToSearchResult(object? item)
+    {
+        if (item is not SearchResultViewModel result)
+        {
+            return;
+        }
+
+        if (result.Session is null)
+        {
+            SaveNote();
+            LoadDefaultNote();
+        }
+        else
+        {
+            var matchKey = _sessionMatcher.CreateMatchKey(result.Session.Identity);
+            LoadWindowSession(result.Session, matchKey);
+        }
+
+        IsSettingsOpen = false;
+        ClearSearch();
+    }
+
+    private static SearchMatch? FindFirstMatch(SessionNote note, string query)
+    {
+        string? section = null;
+        string? text = null;
+        var total = 0;
+
+        void Scan(string label, IEnumerable<string> values)
+        {
+            foreach (var value in values)
+            {
+                if (!string.IsNullOrEmpty(value)
+                    && value.Contains(query, StringComparison.OrdinalIgnoreCase))
+                {
+                    total++;
+                    if (section is null)
+                    {
+                        section = label;
+                        text = value;
+                    }
+                }
+            }
+        }
+
+        Scan("Key", note.Sections.Pinned.Select(item => item.Text));
+        Scan("Todo", note.Sections.Todo.Select(item => item.Text));
+        Scan("Commands", note.Sections.Commands.Select(item => item.Text));
+        Scan("Notes", note.Sections.Notes.Select(item => item.Text));
+
+        return section is null ? null : new SearchMatch(section, text!, total);
+    }
+
+    private sealed record SearchMatch(string Section, string Text, int Total);
+
+    private void ApplyHotkey()
+    {
+        if (_selectedHotkey is null
+            || string.Equals(_selectedHotkey.Token, _appliedHotkey.Token, StringComparison.Ordinal))
+        {
+            HotkeyStatus = $"Current: {_appliedHotkey.Display}";
+            return;
+        }
+
+        HotkeyChangeRequested?.Invoke(this, _selectedHotkey);
+    }
+
+    public void NotifyHotkeyApplied(bool success, string? error)
+    {
+        if (success)
+        {
+            _appliedHotkey = _selectedHotkey;
+            _settingsService.SaveHotkey(_appliedHotkey.Token);
+            OnPropertyChanged(nameof(AppliedHotkey));
+            HotkeyStatus = $"Hotkey set to {_appliedHotkey.Display}";
+            return;
+        }
+
+        SelectedHotkey = _appliedHotkey;
+        HotkeyStatus =
+            $"Could not set that shortcut ({error ?? "unknown error"}). Still using {_appliedHotkey.Display}.";
     }
 
     private void ShowCopyFeedback(string message)
