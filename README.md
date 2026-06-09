@@ -165,7 +165,9 @@ SessionPad v0.1 is local-first:
 - Rapid window-title changes (e.g. a shell that puts the running command in its title)
   are debounced, and title changes that still resolve to the same pad no longer switch.
 - The attach shortcut is configurable from a preset list, not free-form key capture.
-- Multi-monitor and DPI behavior should still be manually tested.
+- Per-Monitor V2 DPI awareness is enabled, so the pad renders crisply across
+  mixed-DPI monitors. Multi-monitor positioning still benefits from manual checking
+  on your specific setup.
 - No installer or MSIX package yet.
 
 See `docs/V0_3_0_RELEASE_NOTES.md` for the latest additions (item reordering,
