@@ -18,9 +18,37 @@ public sealed class NoteStorageService
 
     private const int MaxBackupsPerSession = 5;
 
-    public string AppDataDirectory { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "SessionPad");
+    private readonly IClock _clock;
+
+    public NoteStorageService()
+        : this(DefaultAppDataDirectory(), new SystemClock())
+    {
+    }
+
+    public NoteStorageService(IClock clock)
+        : this(DefaultAppDataDirectory(), clock)
+    {
+    }
+
+    public NoteStorageService(string baseDirectory, IClock clock)
+    {
+        if (string.IsNullOrWhiteSpace(baseDirectory))
+        {
+            throw new ArgumentException("The base directory must not be empty.", nameof(baseDirectory));
+        }
+
+        AppDataDirectory = baseDirectory;
+        _clock = clock;
+    }
+
+    public string AppDataDirectory { get; }
+
+    private static string DefaultAppDataDirectory()
+    {
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "SessionPad");
+    }
 
     public string NotesDirectory => Path.Combine(AppDataDirectory, "notes");
 
@@ -148,7 +176,7 @@ public sealed class NoteStorageService
         try
         {
             Directory.CreateDirectory(BackupsDirectory);
-            var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmssfff");
+            var timestamp = _clock.UtcNow.ToString("yyyyMMddHHmmssfff");
             var backupPath = Path.Combine(BackupsDirectory, $"{sessionKey}.{timestamp}.json");
             File.WriteAllText(backupPath, JsonSerializer.Serialize(note, JsonOptions));
             PruneBackups(sessionKey);
