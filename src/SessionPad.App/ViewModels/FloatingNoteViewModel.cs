@@ -1116,6 +1116,13 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
             $"Could not set that shortcut ({error ?? "unknown error"}). Still using {_appliedHotkey.Display}.";
     }
 
+    public void NotifyHotkeyRegistrationFailed(string display, int win32Error)
+    {
+        HotkeyStatus =
+            $"Could not register {display} (Win32 error {win32Error}). It may be in use by another app.";
+        ShowStatusToast($"Attach shortcut {display} is unavailable — it may be in use by another app.");
+    }
+
     private void ShowCopyFeedback(string message)
     {
         LastCommandCopyStatus = message;
