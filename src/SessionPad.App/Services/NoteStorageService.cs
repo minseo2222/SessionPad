@@ -18,6 +18,18 @@ public sealed class NoteStorageService
 
     private const int MaxBackupsPerSession = 5;
 
+    private readonly IClock _clock;
+
+    public NoteStorageService()
+        : this(new SystemClock())
+    {
+    }
+
+    public NoteStorageService(IClock clock)
+    {
+        _clock = clock;
+    }
+
     public string AppDataDirectory { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "SessionPad");
@@ -148,7 +160,7 @@ public sealed class NoteStorageService
         try
         {
             Directory.CreateDirectory(BackupsDirectory);
-            var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmssfff");
+            var timestamp = _clock.UtcNow.ToString("yyyyMMddHHmmssfff");
             var backupPath = Path.Combine(BackupsDirectory, $"{sessionKey}.{timestamp}.json");
             File.WriteAllText(backupPath, JsonSerializer.Serialize(note, JsonOptions));
             PruneBackups(sessionKey);
