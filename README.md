@@ -24,6 +24,8 @@ SessionPad is local-first. It is not a cloud app, AI assistant, team tool, IDE p
 - WinEvent-hook-based following with low-frequency polling as a fallback; rapid title changes are debounced.
 - Hide when the attached target is minimized, then show again when it is restored.
 - Search across all session notes from Settings.
+- Session manager in Settings: list saved sessions, open one, or delete it (note and
+  backups included) with an inline confirm.
 - Command Copy button that writes a user-entered command to the clipboard only after an explicit click.
 - Local Data section with storage path, Open Folder, and Delete All Local Data controls.
 - Unit tests (`dotnet test`) run in CI on every push.
