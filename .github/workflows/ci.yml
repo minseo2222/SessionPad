@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build (Release, warnings as errors)
+        run: dotnet build SessionPad.sln -c Release -warnaserror
+
+      - name: Test (Release)
+        run: dotnet test SessionPad.sln -c Release --no-build --verbosity normal
