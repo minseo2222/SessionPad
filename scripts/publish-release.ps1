@@ -1,8 +1,17 @@
 param(
     [switch]$SelfContained,
     [string]$Runtime = "win-x64",
-    [string]$OutputPath = "artifacts/SessionPad-v0.1"
+    [string]$Version = "",
+    [string]$OutputPath = ""
 )
+
+if (-not $OutputPath) {
+    if ($Version) {
+        $OutputPath = "artifacts/SessionPad-v$Version"
+    } else {
+        $OutputPath = "artifacts/SessionPad"
+    }
+}
 
 $ErrorActionPreference = "Stop"
 
