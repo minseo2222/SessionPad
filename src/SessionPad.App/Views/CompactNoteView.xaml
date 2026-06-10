@@ -77,13 +77,8 @@
             BorderBrush="{DynamicResource Border.Hairline}"
             BorderThickness="1"
             CornerRadius="11">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="12"
-                              ShadowDepth="1"
-                              Opacity="0.10"
-                              Color="#282820" />
-        </Border.Effect>
-
+        <!-- No DropShadowEffect: the chromeless window's DWM frame provides the shadow
+             (and, on Windows 11, the rounded corners). -->
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="4" />
@@ -118,11 +113,14 @@
                 </Grid.RowDefinitions>
 
                 <Grid Grid.Row="0"
-                      Margin="0,0,0,12">
+                      Margin="0,0,0,12"
+                      Background="Transparent"
+                      MouseLeftButtonDown="OnHeaderMoveMouseLeftButtonDown">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
@@ -182,6 +180,16 @@
                             Margin="5,0,0,0"
                             Foreground="{DynamicResource Text.Faint}"
                             ToolTip="Collapse" />
+                    <Button Grid.Column="6"
+                            Click="OnCloseButtonClick"
+                            Content="&#x2715;"
+                            Width="25"
+                            Height="25"
+                            Padding="0"
+                            Margin="5,0,0,0"
+                            FontSize="11"
+                            Foreground="{DynamicResource Text.Faint}"
+                            ToolTip="Hide to tray" />
                 </Grid>
 
                 <Border Grid.Row="1"
@@ -719,6 +727,15 @@
                                            TextWrapping="Wrap"
                                            Text="SessionPad stores user-entered notes locally. It does not use cloud sync, login, telemetry, screen scraping, or terminal scraping." />
                                 <DockPanel Margin="0,8,0,0">
+                                    <DockPanel.Style>
+                                        <Style TargetType="{x:Type DockPanel}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsDeleteConfirmPending}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DockPanel.Style>
                                     <Button DockPanel.Dock="Left"
                                             Command="{Binding OpenLocalDataFolderCommand}"
                                             Content="Open Folder"
@@ -731,6 +748,34 @@
                                             Padding="8,4"
                                             Margin="8,0,0,0" />
                                 </DockPanel>
+                                <StackPanel Margin="0,8,0,0">
+                                    <StackPanel.Style>
+                                        <Style TargetType="{x:Type StackPanel}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsDeleteConfirmPending}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+                                    <TextBlock Foreground="{DynamicResource Text.Primary}"
+                                               TextWrapping="Wrap"
+                                               Text="Delete all local SessionPad data? This cannot be undone." />
+                                    <StackPanel Orientation="Horizontal"
+                                                Margin="0,8,0,0">
+                                        <Button Command="{Binding ConfirmDeleteLocalDataCommand}"
+                                                Content="Delete"
+                                                Foreground="#C0453F"
+                                                MinWidth="88"
+                                                Padding="8,4" />
+                                        <Button Command="{Binding CancelDeleteLocalDataCommand}"
+                                                Content="Cancel"
+                                                MinWidth="88"
+                                                Padding="8,4"
+                                                Margin="8,0,0,0" />
+                                    </StackPanel>
+                                </StackPanel>
                                 <TextBlock Margin="0,8,0,0"
                                            Foreground="{DynamicResource Status}"
                                            TextWrapping="Wrap"

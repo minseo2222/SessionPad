@@ -12,7 +12,18 @@
         MinHeight="420"
         WindowStartupLocation="CenterScreen"
         ShowInTaskbar="True"
+        WindowStyle="None"
         Background="{DynamicResource Surface.Base}">
+    <WindowChrome.WindowChrome>
+        <!-- Chromeless shell: no caption bar, edge resize kept, thin glass frame so the
+             DWM drop shadow is preserved. Corners are rounded natively via
+             DWMWA_WINDOW_CORNER_PREFERENCE on Windows 11 (square fallback elsewhere). -->
+        <WindowChrome CaptionHeight="0"
+                      CornerRadius="0"
+                      GlassFrameThickness="0,0,0,1"
+                      ResizeBorderThickness="6"
+                      UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
     <Grid Background="{DynamicResource Surface.Base}">
         <views:DockedTabView HorizontalAlignment="Center"
                              VerticalAlignment="Center">
@@ -29,8 +40,7 @@
         </views:DockedTabView>
 
         <views:CompactNoteView HorizontalAlignment="Stretch"
-                               VerticalAlignment="Stretch"
-                               Margin="8">
+                               VerticalAlignment="Stretch">
             <views:CompactNoteView.Style>
                 <Style TargetType="{x:Type views:CompactNoteView}">
                     <Setter Property="Visibility" Value="Collapsed" />

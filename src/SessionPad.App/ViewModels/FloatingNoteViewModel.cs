@@ -64,6 +64,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private bool _showCopyToast;
     private bool _isCurrentSessionPinned;
     private bool _isSettingsOpen;
+    private bool _isDeleteConfirmPending;
     private string _newSessionName = string.Empty;
     private string _newPinnedText = string.Empty;
     private string _newTodoText = string.Empty;
@@ -113,7 +114,17 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         ToggleSettingsCommand = new RelayCommand(() => IsSettingsOpen = !IsSettingsOpen);
         RenameSessionCommand = new RelayCommand(RenameSession);
         OpenLocalDataFolderCommand = new RelayCommand(OpenLocalDataFolder);
-        DeleteLocalDataCommand = new RelayCommand(() => DeleteLocalDataRequested?.Invoke(this, EventArgs.Empty));
+        DeleteLocalDataCommand = new RelayCommand(() => IsDeleteConfirmPending = true);
+        ConfirmDeleteLocalDataCommand = new RelayCommand(() =>
+        {
+            IsDeleteConfirmPending = false;
+            DeleteLocalDataRequested?.Invoke(this, EventArgs.Empty);
+        });
+        CancelDeleteLocalDataCommand = new RelayCommand(() =>
+        {
+            IsDeleteConfirmPending = false;
+            LocalDataStatus = "Delete canceled. Local data was not changed.";
+        });
 
         AddPinnedCommand = new RelayCommand(AddPinned);
         DeletePinnedCommand = new RelayCommand(DeletePinned);
@@ -160,6 +171,10 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public ICommand OpenLocalDataFolderCommand { get; }
 
     public ICommand DeleteLocalDataCommand { get; }
+
+    public ICommand ConfirmDeleteLocalDataCommand { get; }
+
+    public ICommand CancelDeleteLocalDataCommand { get; }
 
     public ICommand AddPinnedCommand { get; }
 
@@ -280,6 +295,12 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     {
         get => _isSettingsOpen;
         set => SetField(ref _isSettingsOpen, value);
+    }
+
+    public bool IsDeleteConfirmPending
+    {
+        get => _isDeleteConfirmPending;
+        private set => SetField(ref _isDeleteConfirmPending, value);
     }
 
     public string CurrentSessionId
@@ -588,6 +609,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 
     public void ResetAfterLocalDataDeleted()
     {
+        IsDeleteConfirmPending = false;
         _currentSession = null;
         ApplyDefaultSessionContext("Local data deleted. Default note reset.");
         ClearNewItemInputs();
