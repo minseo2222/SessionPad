@@ -143,6 +143,22 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         SearchCommand = new RelayCommand(RunSearch);
         ClearSearchCommand = new RelayCommand(ClearSearch);
         JumpToSearchResultCommand = new RelayCommand(JumpToSearchResult);
+        OpenSessionCommand = new RelayCommand(OpenSession);
+        RequestDeleteSessionCommand = new RelayCommand(item =>
+        {
+            if (item is SessionRowViewModel row)
+            {
+                row.IsDeleteConfirmPending = true;
+            }
+        });
+        CancelDeleteSessionCommand = new RelayCommand(item =>
+        {
+            if (item is SessionRowViewModel row)
+            {
+                row.IsDeleteConfirmPending = false;
+            }
+        });
+        ConfirmDeleteSessionCommand = new RelayCommand(ConfirmDeleteSession);
         ApplyHotkeyCommand = new RelayCommand(ApplyHotkey);
 
         _copyToastTimer.Tick += OnCopyToastTimerTick;
@@ -210,7 +226,17 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 
     public ICommand JumpToSearchResultCommand { get; }
 
+    public ICommand OpenSessionCommand { get; }
+
+    public ICommand RequestDeleteSessionCommand { get; }
+
+    public ICommand CancelDeleteSessionCommand { get; }
+
+    public ICommand ConfirmDeleteSessionCommand { get; }
+
     public ObservableCollection<SearchResultViewModel> SearchResults { get; } = new();
+
+    public ObservableCollection<SessionRowViewModel> Sessions { get; } = new();
 
     public ICommand ApplyHotkeyCommand { get; }
 
@@ -294,7 +320,13 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public bool IsSettingsOpen
     {
         get => _isSettingsOpen;
-        set => SetField(ref _isSettingsOpen, value);
+        set
+        {
+            if (SetField(ref _isSettingsOpen, value) && value)
+            {
+                RefreshSessions();
+            }
+        }
     }
 
     public bool IsDeleteConfirmPending
@@ -1075,6 +1107,67 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 
         IsSettingsOpen = false;
         ClearSearch();
+    }
+
+    private void RefreshSessions()
+    {
+        Sessions.Clear();
+
+        try
+        {
+            foreach (var session in _storageService.LoadSessionIndex().Sessions
+                .OrderByDescending(session => session.LastSeenAt))
+            {
+                Sessions.Add(new SessionRowViewModel(session));
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            Debug.WriteLine($"SessionPad could not load the session list: {ex.Message}");
+        }
+    }
+
+    private void OpenSession(object? item)
+    {
+        if (item is not SessionRowViewModel row)
+        {
+            return;
+        }
+
+        var matchKey = _sessionMatcher.CreateMatchKey(row.Session.Identity);
+        LoadWindowSession(row.Session, matchKey);
+        IsSettingsOpen = false;
+    }
+
+    private void ConfirmDeleteSession(object? item)
+    {
+        if (item is not SessionRowViewModel row)
+        {
+            return;
+        }
+
+        try
+        {
+            var wasCurrent = string.Equals(row.Session.SessionId, CurrentSessionId, StringComparison.Ordinal);
+            _storageService.DeleteSession(row.Session.SessionId);
+
+            if (wasCurrent)
+            {
+                // The session being deleted must not be saved back; just return to default.
+                LoadDefaultNote();
+            }
+
+            RefreshSessions();
+            ShowStatusToast($"Deleted '{row.DisplayName}'.");
+        }
+        catch (Exception ex) when (ex is IOException
+            or UnauthorizedAccessException
+            or InvalidOperationException
+            or NotSupportedException)
+        {
+            Debug.WriteLine($"SessionPad could not delete session '{row.Session.SessionId}': {ex.Message}");
+            ShowStatusToast($"Couldn't delete session: {ex.Message}");
+        }
     }
 
     private static SearchMatch? FindFirstMatch(SessionNote note, string query)
