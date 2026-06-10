@@ -877,20 +877,7 @@ public partial class MainWindow : Window
 
     private void OnDeleteLocalDataRequested(object? sender, EventArgs e)
     {
-        var result = System.Windows.MessageBox.Show(
-            this,
-            "Delete all local SessionPad data? This removes saved notes and sessions from this device. This cannot be undone.",
-            "Delete Local Data",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning,
-            MessageBoxResult.No);
-
-        if (result != MessageBoxResult.Yes)
-        {
-            _viewModel.SetLocalDataStatus("Delete canceled. Local data was not changed.");
-            return;
-        }
-
+        // Confirmation already happened in-app (inline Delete/Cancel in Settings).
         _attachmentTimer.Stop();
         var attachmentResult = _windowAttachmentService.Detach("Local data deleted.");
         _viewModel.SetAttachmentResult(attachmentResult);
