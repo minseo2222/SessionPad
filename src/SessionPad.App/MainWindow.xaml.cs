@@ -77,6 +77,9 @@ public partial class MainWindow : Window
         _source = HwndSource.FromHwnd(_windowHandle);
         _source?.AddHook(OnWindowMessage);
 
+        ApplyDwmWindowDecorations();
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+
         var hotkey = _viewModel.AppliedHotkey;
         _hotkeyRegistered = _hotkeyService.Register(_windowHandle, hotkey.Modifiers, hotkey.VirtualKey);
         if (!_hotkeyRegistered)
@@ -109,6 +112,7 @@ public partial class MainWindow : Window
         _viewModel.DeleteLocalDataRequested -= OnDeleteLocalDataRequested;
         _viewModel.AutoTrackForegroundChanged -= OnAutoTrackForegroundChanged;
         _viewModel.HotkeyChangeRequested -= OnHotkeyChangeRequested;
+        _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
         _attachmentTimer.Stop();
         _attachmentTimer.Tick -= OnAttachmentTimerTick;
         _foregroundWatchTimer.Stop();
@@ -178,6 +182,45 @@ public partial class MainWindow : Window
         finally
         {
             _isDragAttachInProgress = false;
+        }
+    }
+
+    private void ApplyDwmWindowDecorations()
+    {
+        if (_windowHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        try
+        {
+            // Native rounded corners on Windows 11; older Windows ignores this and
+            // keeps square corners (purely cosmetic, behavior identical).
+            var cornerPreference = DwmApi.DwmwcpRound;
+            DwmApi.DwmSetWindowAttribute(
+                _windowHandle,
+                DwmApi.DwmwaWindowCornerPreference,
+                ref cornerPreference,
+                sizeof(int));
+
+            var useDark = _viewModel.IsDarkTheme ? 1 : 0;
+            DwmApi.DwmSetWindowAttribute(
+                _windowHandle,
+                DwmApi.DwmwaUseImmersiveDarkMode,
+                ref useDark,
+                sizeof(int));
+        }
+        catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
+        {
+            Debug.WriteLine($"SessionPad could not apply DWM window decorations: {ex.Message}");
+        }
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(FloatingNoteViewModel.IsDarkTheme))
+        {
+            ApplyDwmWindowDecorations();
         }
     }
 

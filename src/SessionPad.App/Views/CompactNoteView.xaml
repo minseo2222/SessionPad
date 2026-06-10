@@ -77,13 +77,8 @@
             BorderBrush="{DynamicResource Border.Hairline}"
             BorderThickness="1"
             CornerRadius="11">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="12"
-                              ShadowDepth="1"
-                              Opacity="0.10"
-                              Color="#282820" />
-        </Border.Effect>
-
+        <!-- No DropShadowEffect: the chromeless window's DWM frame provides the shadow
+             (and, on Windows 11, the rounded corners). -->
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="4" />
@@ -118,11 +113,14 @@
                 </Grid.RowDefinitions>
 
                 <Grid Grid.Row="0"
-                      Margin="0,0,0,12">
+                      Margin="0,0,0,12"
+                      Background="Transparent"
+                      MouseLeftButtonDown="OnHeaderMoveMouseLeftButtonDown">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
@@ -182,6 +180,16 @@
                             Margin="5,0,0,0"
                             Foreground="{DynamicResource Text.Faint}"
                             ToolTip="Collapse" />
+                    <Button Grid.Column="6"
+                            Click="OnCloseButtonClick"
+                            Content="&#x2715;"
+                            Width="25"
+                            Height="25"
+                            Padding="0"
+                            Margin="5,0,0,0"
+                            FontSize="11"
+                            Foreground="{DynamicResource Text.Faint}"
+                            ToolTip="Hide to tray" />
                 </Grid>
 
                 <Border Grid.Row="1"

@@ -12,7 +12,8 @@
             Background="{DynamicResource Surface.Raised}"
             BorderBrush="{DynamicResource Border.Hairline}"
             BorderThickness="1"
-            CornerRadius="8">
+            CornerRadius="8"
+            MouseLeftButtonDown="OnTabMoveMouseLeftButtonDown">
         <Button Command="{Binding ExpandCommand}"
                 Cursor="Hand"
                 Background="Transparent"
