@@ -13,6 +13,7 @@ SessionPad is local-first. It is not a cloud app, AI assistant, team tool, IDE p
 ## Features
 
 - WPF desktop app targeting `net10.0-windows`, with Per-Monitor V2 DPI awareness.
+- Chromeless floating shell: native rounded corners and DWM dark frame on Windows 11.
 - Compact Note and Docked Tab views; dark and light themes; system tray icon.
 - Pinned, Todo, Commands, and Notes sections with item reordering and inline note editing.
 - Local JSON persistence with atomic writes and rolling per-note backups.
