@@ -715,6 +715,133 @@
                                           IsChecked="{Binding IsCurrentSessionPinned, Mode=TwoWay}" />
 
                                 <TextBlock Margin="0,14,0,0"
+                                           Text="Sessions"
+                                           FontWeight="Medium"
+                                           Foreground="{DynamicResource Text.Primary}" />
+                                <TextBlock Margin="0,6,0,0"
+                                           Foreground="{DynamicResource Text.Faint}"
+                                           TextWrapping="Wrap"
+                                           Text="No saved sessions yet.">
+                                    <TextBlock.Style>
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Sessions.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <ScrollViewer Margin="0,6,0,0"
+                                              MaxHeight="190"
+                                              VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl ItemsSource="{Binding Sessions}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Margin="0,0,0,5"
+                                                        Padding="9,7"
+                                                        Background="{DynamicResource Surface.Raised}"
+                                                        BorderBrush="{DynamicResource Border.Faint}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="7">
+                                                    <Grid>
+                                                        <Grid x:Name="SessionRowNormal">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <StackPanel VerticalAlignment="Center"
+                                                                        Margin="0,0,8,0">
+                                                                <StackPanel Orientation="Horizontal">
+                                                                    <TextBlock Text="&#x25CF;"
+                                                                               FontSize="10"
+                                                                               Foreground="{DynamicResource Accent}"
+                                                                               VerticalAlignment="Center"
+                                                                               Margin="0,0,5,0">
+                                                                        <TextBlock.Style>
+                                                                            <Style TargetType="{x:Type TextBlock}">
+                                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </TextBlock.Style>
+                                                                    </TextBlock>
+                                                                    <TextBlock Text="{Binding DisplayName}"
+                                                                               FontWeight="Medium"
+                                                                               Foreground="{DynamicResource Text.Primary}"
+                                                                               TextTrimming="CharacterEllipsis" />
+                                                                </StackPanel>
+                                                                <TextBlock Text="{Binding Detail}"
+                                                                           Margin="0,2,0,0"
+                                                                           Foreground="{DynamicResource Text.Faint}"
+                                                                           FontSize="11"
+                                                                           TextTrimming="CharacterEllipsis" />
+                                                            </StackPanel>
+                                                            <Button Grid.Column="1"
+                                                                    Content="Open"
+                                                                    Padding="8,3"
+                                                                    FontSize="11"
+                                                                    VerticalAlignment="Center"
+                                                                    Command="{Binding DataContext.OpenSessionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                    CommandParameter="{Binding}" />
+                                                            <Button Grid.Column="2"
+                                                                    Content="Delete"
+                                                                    Padding="8,3"
+                                                                    FontSize="11"
+                                                                    Margin="6,0,0,0"
+                                                                    Foreground="#C0453F"
+                                                                    VerticalAlignment="Center"
+                                                                    Command="{Binding DataContext.RequestDeleteSessionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                    CommandParameter="{Binding}" />
+                                                        </Grid>
+                                                        <Grid x:Name="SessionRowConfirm"
+                                                              Visibility="Collapsed">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Text="Delete this session and its note?"
+                                                                       Foreground="{DynamicResource Text.Primary}"
+                                                                       TextWrapping="Wrap"
+                                                                       VerticalAlignment="Center"
+                                                                       Margin="0,0,8,0" />
+                                                            <Button Grid.Column="1"
+                                                                    Content="Delete"
+                                                                    Padding="8,3"
+                                                                    FontSize="11"
+                                                                    Foreground="#C0453F"
+                                                                    VerticalAlignment="Center"
+                                                                    Command="{Binding DataContext.ConfirmDeleteSessionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                    CommandParameter="{Binding}" />
+                                                            <Button Grid.Column="2"
+                                                                    Content="Cancel"
+                                                                    Padding="8,3"
+                                                                    FontSize="11"
+                                                                    Margin="6,0,0,0"
+                                                                    VerticalAlignment="Center"
+                                                                    Command="{Binding DataContext.CancelDeleteSessionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                    CommandParameter="{Binding}" />
+                                                        </Grid>
+                                                    </Grid>
+                                                </Border>
+                                                <DataTemplate.Triggers>
+                                                    <DataTrigger Binding="{Binding IsDeleteConfirmPending}" Value="True">
+                                                        <Setter TargetName="SessionRowNormal" Property="Visibility" Value="Collapsed" />
+                                                        <Setter TargetName="SessionRowConfirm" Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </DataTemplate.Triggers>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+
+                                <TextBlock Margin="0,14,0,0"
                                            Text="Local Data"
                                            FontWeight="Medium"
                                            Foreground="{DynamicResource Text.Primary}" />

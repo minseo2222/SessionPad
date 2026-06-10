@@ -35,6 +35,55 @@ public sealed class SearchResultViewModel
         : $"{SectionLabel} · {MatchCount} matches";
 }
 
+public sealed class SessionRowViewModel : INotifyPropertyChanged
+{
+    private bool _isDeleteConfirmPending;
+
+    public SessionRowViewModel(SessionSummary session)
+    {
+        Session = session;
+        DisplayName = string.IsNullOrWhiteSpace(session.DisplayName)
+            ? "Window session"
+            : session.DisplayName;
+        ProcessName = string.IsNullOrWhiteSpace(session.Identity.ProcessName)
+            ? "(unknown)"
+            : session.Identity.ProcessName;
+        LastSeenText = session.LastSeenAt == default
+            ? "never"
+            : session.LastSeenAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+        IsPinned = session.IsPinned;
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public SessionSummary Session { get; }
+
+    public string DisplayName { get; }
+
+    public string ProcessName { get; }
+
+    public string LastSeenText { get; }
+
+    public bool IsPinned { get; }
+
+    public string Detail => $"{ProcessName} · {LastSeenText}";
+
+    public bool IsDeleteConfirmPending
+    {
+        get => _isDeleteConfirmPending;
+        set
+        {
+            if (_isDeleteConfirmPending == value)
+            {
+                return;
+            }
+
+            _isDeleteConfirmPending = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsDeleteConfirmPending)));
+        }
+    }
+}
+
 public sealed class PinnedItemViewModel
 {
     public PinnedItemViewModel(string id, string text)

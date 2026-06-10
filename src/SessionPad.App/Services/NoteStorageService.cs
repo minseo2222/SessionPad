@@ -133,6 +133,68 @@ public sealed class NoteStorageService
         SaveJsonAtomic(SessionIndexPath, index);
     }
 
+    /// <summary>
+    /// Removes one session from the index and deletes its note file and backups.
+    /// File deletion is best-effort: the index entry is removed even if a file
+    /// cannot be deleted. The default note is never touched. Returns false when
+    /// no session with the given id exists (no-op).
+    /// </summary>
+    public bool DeleteSession(string sessionId)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId))
+        {
+            return false;
+        }
+
+        var index = LoadSessionIndex();
+        var session = index.Sessions.FirstOrDefault(existing =>
+            string.Equals(existing.SessionId, sessionId, StringComparison.Ordinal));
+        if (session is null)
+        {
+            return false;
+        }
+
+        index.Sessions.Remove(session);
+        SaveSessionIndex(index);
+        TryDeleteSessionFiles(session);
+        return true;
+    }
+
+    private void TryDeleteSessionFiles(SessionSummary session)
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(session.NoteFile) && !Path.IsPathRooted(session.NoteFile))
+            {
+                var notePath = GetAbsoluteStoragePath(session.NoteFile);
+                if (File.Exists(notePath))
+                {
+                    File.Delete(notePath);
+                }
+            }
+
+            if (Directory.Exists(BackupsDirectory))
+            {
+                var prefix = session.SessionId + ".";
+                foreach (var backup in Directory.GetFiles(BackupsDirectory, $"{session.SessionId}.*.json"))
+                {
+                    if (Path.GetFileName(backup).StartsWith(prefix, StringComparison.Ordinal))
+                    {
+                        File.Delete(backup);
+                    }
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException
+            or UnauthorizedAccessException
+            or NotSupportedException
+            or InvalidOperationException)
+        {
+            Debug.WriteLine(
+                $"SessionPad could not delete files for session '{session.SessionId}': {ex.Message}");
+        }
+    }
+
     private SessionNote? LoadNoteFromPath(string notePath)
     {
         if (!File.Exists(notePath))
