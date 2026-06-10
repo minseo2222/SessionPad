@@ -1,27 +1,31 @@
 # SessionPad
 
+[![CI](https://github.com/minseo2222/SessionPad/actions/workflows/ci.yml/badge.svg)](https://github.com/minseo2222/SessionPad/actions/workflows/ci.yml)
+
 SessionPad is a Windows-first local desktop utility that attaches a lightweight note pad to the app window you are working in.
 
 The product goal is simple:
 
 > This note belongs to the work window I am using right now.
 
-SessionPad v0.1 is a local release candidate. It is not a cloud app, AI assistant, team tool, IDE plugin, browser extension, or full knowledge-management system.
+SessionPad is local-first. It is not a cloud app, AI assistant, team tool, IDE plugin, browser extension, or full knowledge-management system.
 
-## v0.1 Features
+## Features
 
-- WPF desktop app targeting `net10.0-windows`.
-- Compact Note and Docked Tab views.
-- Pinned, Todo, Commands, and Notes sections.
-- In-memory editing with local JSON persistence.
-- Per-window note restore using `processName + normalizedWindowTitle`.
-- Global hotkey: `Ctrl+Alt+N`.
-- Attach to the current foreground window with `Ctrl+Alt+N`.
+- WPF desktop app targeting `net10.0-windows`, with Per-Monitor V2 DPI awareness.
+- Compact Note and Docked Tab views; dark and light themes; system tray icon.
+- Pinned, Todo, Commands, and Notes sections with item reordering and inline note editing.
+- Local JSON persistence with atomic writes and rolling per-note backups.
+- Per-window note restore using `processName + normalizedWindowTitle`; VS Code, Cursor, and Windsurf match at the project level.
+- Global attach shortcut (default `Ctrl+Alt+N`, configurable from a preset list in Settings).
 - Manual drag attach by dragging the SessionPad handle near another app window.
-- Polling-based follow behavior for attached windows.
+- Optional auto-track mode (off by default): SessionPad follows whichever window you focus.
+- WinEvent-hook-based following with low-frequency polling as a fallback; rapid title changes are debounced.
 - Hide when the attached target is minimized, then show again when it is restored.
+- Search across all session notes from Settings.
 - Command Copy button that writes a user-entered command to the clipboard only after an explicit click.
 - Local Data section with storage path, Open Folder, and Delete All Local Data controls.
+- Unit tests (`dotnet test`) run in CI on every push.
 
 ## Run From Source
 
@@ -61,8 +65,10 @@ powershell -ExecutionPolicy Bypass -File scripts/publish-release.ps1
 Default output:
 
 ```text
-artifacts/SessionPad-v0.1
+artifacts/SessionPad
 ```
+
+Pass `-Version 0.3.2` to produce a versioned folder such as `artifacts/SessionPad-v0.3.2`.
 
 The script creates a framework-dependent publish by default. It does not create an installer, MSIX package, or signed build.
 
@@ -92,7 +98,7 @@ If no valid target is nearby, SessionPad stays where it is and shows a safe stat
 
 SessionPad stores notes per matched window identity.
 
-The v0.1 identity key is:
+The window identity key is:
 
 ```text
 lower(processName) + "|" + normalizedWindowTitle
@@ -136,7 +142,7 @@ This removes saved SessionPad notes and sessions from this device only. The app 
 
 ## Privacy Principles
 
-SessionPad v0.1 is local-first:
+SessionPad is local-first:
 
 - No login.
 - No cloud sync.
