@@ -361,32 +361,59 @@ public partial class MainWindow : Window
     {
         if (_windowHandle == IntPtr.Zero)
         {
-            _viewModel.NotifyHotkeyApplied(false, "window not ready");
+            // Nothing was registered. Only claim the previous hotkey is "still active"
+            // when one actually is; otherwise no attach shortcut is active.
+            if (_hotkeyRegistered)
+            {
+                _viewModel.NotifyHotkeyRevertedToPrevious("the window isn't ready yet");
+            }
+            else
+            {
+                _viewModel.NotifyHotkeyUnavailable("the window isn't ready yet");
+            }
+
             return;
         }
 
-        if (_hotkeyRegistered)
+        var coordinator = new HotkeyRegistrationCoordinator(
+            new HotkeyServiceRegistrar(_hotkeyService, _windowHandle));
+        var result = coordinator.Apply(option, _viewModel.AppliedHotkey, _hotkeyRegistered);
+        _hotkeyRegistered = result.HotkeyRegistered;
+
+        switch (result.Outcome)
         {
-            _hotkeyService.Unregister(_windowHandle);
-            _hotkeyRegistered = false;
+            case HotkeyApplyOutcome.Applied:
+                _viewModel.NotifyHotkeyApplied();
+                break;
+            case HotkeyApplyOutcome.RevertedToPrevious:
+                Debug.WriteLine($"SessionPad hotkey change failed (Win32 error {result.Error}); kept previous.");
+                _viewModel.NotifyHotkeyRevertedToPrevious("it may be in use by another app");
+                break;
+            case HotkeyApplyOutcome.NoHotkeyActive:
+                Debug.WriteLine($"SessionPad hotkey change failed (Win32 error {result.Error}); none active.");
+                _viewModel.NotifyHotkeyUnavailable("it may be in use by another app");
+                break;
+        }
+    }
+
+    /// <summary>Adapts <see cref="HotkeyService"/> to <see cref="IHotkeyRegistrar"/> for a fixed window handle.</summary>
+    private sealed class HotkeyServiceRegistrar : IHotkeyRegistrar
+    {
+        private readonly HotkeyService _service;
+        private readonly IntPtr _hwnd;
+
+        public HotkeyServiceRegistrar(HotkeyService service, IntPtr hwnd)
+        {
+            _service = service;
+            _hwnd = hwnd;
         }
 
-        if (_hotkeyService.Register(_windowHandle, option.Modifiers, option.VirtualKey))
-        {
-            _hotkeyRegistered = true;
-            _viewModel.NotifyHotkeyApplied(true, null);
-            return;
-        }
+        public int LastError => _service.LastRegistrationError;
 
-        var error = _hotkeyService.LastRegistrationError;
+        public bool Register(uint modifiers, uint virtualKey) =>
+            _service.Register(_hwnd, modifiers, virtualKey);
 
-        // Re-register the previously applied hotkey so SessionPad stays usable.
-        var previous = _viewModel.AppliedHotkey;
-        _hotkeyRegistered = _hotkeyService.Register(
-            _windowHandle,
-            previous.Modifiers,
-            previous.VirtualKey);
-        _viewModel.NotifyHotkeyApplied(false, $"Win32 error {error}");
+        public void Unregister() => _service.Unregister(_hwnd);
     }
 
     private void TryAttachToNearestWindowAfterDrag()
@@ -495,12 +522,10 @@ public partial class MainWindow : Window
 
     private static bool CanUseWindowSession(DetectedWindowInfo detectedWindow)
     {
-        return detectedWindow.Hwnd != IntPtr.Zero
-            && !detectedWindow.IsCurrentProcessWindow
-            && detectedWindow.IsVisible
-            && !detectedWindow.IsMinimized
-            && detectedWindow.Width > 0
-            && detectedWindow.Height > 0;
+        // The shared policy used by every attach path. Monitor geometry is not
+        // available here, so the titleless full-screen rule is skipped (it only
+        // applies when detectable from the provided data); the drag path supplies it.
+        return WindowTargetPolicy.IsValidTarget(detectedWindow);
     }
 
     private void OnAttachmentTimerTick(object? sender, EventArgs e)

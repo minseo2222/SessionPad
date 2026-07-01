@@ -8,29 +8,17 @@ using System.Text.Json;
 using System.Windows.Input;
 using System.Windows.Threading;
 using SessionPad.App.Models;
-using SessionPad.App.Native;
 using SessionPad.App.Services;
 
 namespace SessionPad.App.ViewModels;
 
 public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 {
-    private static readonly HotkeyOption[] HotkeyPresets =
-    [
-        new("Ctrl+Alt+N", "Ctrl + Alt + N", User32.ModControl | User32.ModAlt, 0x4E),
-        new("Ctrl+Shift+N", "Ctrl + Shift + N", User32.ModControl | User32.ModShift, 0x4E),
-        new("Ctrl+Alt+S", "Ctrl + Alt + S", User32.ModControl | User32.ModAlt, 0x53),
-        new("Ctrl+Alt+Space", "Ctrl + Alt + Space", User32.ModControl | User32.ModAlt, 0x20),
-        new("Ctrl+Shift+Space", "Ctrl + Shift + Space", User32.ModControl | User32.ModShift, 0x20),
-    ];
-
     private readonly NoteStorageService _storageService;
     private readonly SessionMatcher _sessionMatcher;
     private readonly LocalDataService _localDataService;
     private readonly ClipboardService _clipboardService;
-    private readonly StartupService _startupService = new();
-    private readonly SettingsService _settingsService = new();
-    private readonly ThemeService _themeService = new();
+    private readonly SettingsPanelViewModel _settingsPanel;
     private readonly DispatcherTimer _copyToastTimer = new()
     {
         Interval = TimeSpan.FromMilliseconds(1500)
@@ -53,14 +41,10 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string? _attachmentError;
     private string? _lastFollowUpdateText;
     private string _localDataStatus = "Local data ready";
-    private string _startupStatus = "Startup ready";
     private string _lastCommandCopyStatus = "Ready";
     private string _copyToastText = string.Empty;
     private string _lastDragAttachStatus = "Drag near a window to attach.";
     private string _activeNoteTab = "Key";
-    private bool _startOnLogin;
-    private bool _isDarkTheme;
-    private bool _autoTrackForeground;
     private bool _showCopyToast;
     private bool _isCurrentSessionPinned;
     private bool _isSettingsOpen;
@@ -72,9 +56,6 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     private string _newNoteText = string.Empty;
     private string _searchQuery = string.Empty;
     private string _searchStatus = "Type a word, then press Enter to search your notes.";
-    private HotkeyOption _selectedHotkey;
-    private HotkeyOption _appliedHotkey;
-    private string _hotkeyStatus;
 
     public FloatingNoteViewModel()
         : this(new NoteStorageService(), new LocalDataService(), new ClipboardService())
@@ -95,21 +76,19 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         _sessionMatcher = new SessionMatcher(storageService);
         _localDataService = localDataService;
         _clipboardService = clipboardService;
-        _startOnLogin = _startupService.IsEnabled();
-        _startupStatus = _startOnLogin ? "Enabled" : "Disabled";
-        _isDarkTheme = string.Equals(
-            _themeService.CurrentTheme,
-            ThemeService.DarkThemeName,
-            StringComparison.OrdinalIgnoreCase);
-        _autoTrackForeground = _settingsService.LoadAutoTrackForeground();
 
-        var hotkeyToken = _settingsService.LoadHotkey();
-        _appliedHotkey = Array.Find(HotkeyPresets, option => option.Token == hotkeyToken) ?? HotkeyPresets[0];
-        _selectedHotkey = _appliedHotkey;
-        _hotkeyStatus = $"Current: {_appliedHotkey.Display}";
+        _settingsPanel = new SettingsPanelViewModel(
+            new SettingsService(),
+            new StartupService(),
+            new ThemeService());
+        // Re-raise the panel's property changes as our own so existing bindings on the
+        // delegating properties (IsDarkTheme, HotkeyStatus, …) update, and surface its
+        // hotkey messages through our shared status toast.
+        _settingsPanel.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
+        _settingsPanel.StatusToastRequested += (_, message) => ShowStatusToast(message);
 
-        ExpandCommand = new RelayCommand(() => PanelState = NotePanelState.CompactNote);
-        CollapseCommand = new RelayCommand(() => PanelState = NotePanelState.DockedTab);
+        ExpandCommand = new RelayCommand(() => SetPanelStateAndSave(NotePanelState.CompactNote));
+        CollapseCommand = new RelayCommand(() => SetPanelStateAndSave(NotePanelState.DockedTab));
         SelectNoteTabCommand = new RelayCommand(SelectNoteTab);
         ToggleSettingsCommand = new RelayCommand(() => IsSettingsOpen = !IsSettingsOpen);
         RenameSessionCommand = new RelayCommand(RenameSession);
@@ -159,7 +138,6 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
             }
         });
         ConfirmDeleteSessionCommand = new RelayCommand(ConfirmDeleteSession);
-        ApplyHotkeyCommand = new RelayCommand(ApplyHotkey);
 
         _copyToastTimer.Tick += OnCopyToastTimerTick;
         TodoItems.CollectionChanged += OnTodoItemsChanged;
@@ -170,9 +148,17 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 
     public event EventHandler? DeleteLocalDataRequested;
 
-    public event EventHandler<bool>? AutoTrackForegroundChanged;
+    public event EventHandler<bool>? AutoTrackForegroundChanged
+    {
+        add => _settingsPanel.AutoTrackForegroundChanged += value;
+        remove => _settingsPanel.AutoTrackForegroundChanged -= value;
+    }
 
-    public event EventHandler<HotkeyOption>? HotkeyChangeRequested;
+    public event EventHandler<HotkeyOption>? HotkeyChangeRequested
+    {
+        add => _settingsPanel.HotkeyChangeRequested += value;
+        remove => _settingsPanel.HotkeyChangeRequested -= value;
+    }
 
     public ICommand ExpandCommand { get; }
 
@@ -238,23 +224,19 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 
     public ObservableCollection<SessionRowViewModel> Sessions { get; } = new();
 
-    public ICommand ApplyHotkeyCommand { get; }
+    public ICommand ApplyHotkeyCommand => _settingsPanel.ApplyHotkeyCommand;
 
-    public IReadOnlyList<HotkeyOption> HotkeyOptions => HotkeyPresets;
+    public IReadOnlyList<HotkeyOption> HotkeyOptions => _settingsPanel.HotkeyOptions;
 
     public HotkeyOption SelectedHotkey
     {
-        get => _selectedHotkey;
-        set => SetField(ref _selectedHotkey, value);
+        get => _settingsPanel.SelectedHotkey;
+        set => _settingsPanel.SelectedHotkey = value;
     }
 
-    public HotkeyOption AppliedHotkey => _appliedHotkey;
+    public HotkeyOption AppliedHotkey => _settingsPanel.AppliedHotkey;
 
-    public string HotkeyStatus
-    {
-        get => _hotkeyStatus;
-        private set => SetField(ref _hotkeyStatus, value);
-    }
+    public string HotkeyStatus => _settingsPanel.HotkeyStatus;
 
     public ObservableCollection<PinnedItemViewModel> PinnedItems { get; } = new();
 
@@ -284,6 +266,20 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     public bool IsDockedTab => PanelState == NotePanelState.DockedTab;
 
     public bool IsCompactNote => PanelState == NotePanelState.CompactNote;
+
+    // Expand/Collapse persist the new panel state so it survives a restart. Saving
+    // lives here (not in the PanelState setter) because the setter also runs while
+    // loading a note, where a save would be wrong.
+    private void SetPanelStateAndSave(NotePanelState state)
+    {
+        if (PanelState == state)
+        {
+            return;
+        }
+
+        PanelState = state;
+        SaveNote();
+    }
 
     public int OpenTodoCount => TodoItems.Count(item => !item.IsDone);
 
@@ -409,72 +405,22 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 
     public bool StartOnLogin
     {
-        get => _startOnLogin;
-        set
-        {
-            if (_startOnLogin == value)
-            {
-                return;
-            }
-
-            string? error;
-            var succeeded = value
-                ? _startupService.Enable(out error)
-                : _startupService.Disable(out error);
-
-            if (succeeded)
-            {
-                _startOnLogin = value;
-                OnPropertyChanged();
-                StartupStatus = value ? "Enabled" : "Disabled";
-                return;
-            }
-
-            _startOnLogin = _startupService.IsEnabled();
-            OnPropertyChanged();
-            StartupStatus = $"Failed to {(value ? "enable" : "disable")}: {error ?? "Unknown error"}";
-        }
+        get => _settingsPanel.StartOnLogin;
+        set => _settingsPanel.StartOnLogin = value;
     }
 
-    public string StartupStatus
-    {
-        get => _startupStatus;
-        private set => SetField(ref _startupStatus, value);
-    }
+    public string StartupStatus => _settingsPanel.StartupStatus;
 
     public bool IsDarkTheme
     {
-        get => _isDarkTheme;
-        set
-        {
-            if (_isDarkTheme == value)
-            {
-                return;
-            }
-
-            var theme = value ? ThemeService.DarkThemeName : ThemeService.LightThemeName;
-            _themeService.ApplyTheme(theme);
-            _settingsService.SaveTheme(theme);
-            _isDarkTheme = value;
-            OnPropertyChanged();
-        }
+        get => _settingsPanel.IsDarkTheme;
+        set => _settingsPanel.IsDarkTheme = value;
     }
 
     public bool AutoTrackForeground
     {
-        get => _autoTrackForeground;
-        set
-        {
-            if (_autoTrackForeground == value)
-            {
-                return;
-            }
-
-            _autoTrackForeground = value;
-            _settingsService.SaveAutoTrackForeground(value);
-            OnPropertyChanged();
-            AutoTrackForegroundChanged?.Invoke(this, value);
-        }
+        get => _settingsPanel.AutoTrackForeground;
+        set => _settingsPanel.AutoTrackForeground = value;
     }
 
     public string LastCommandCopyStatus
@@ -678,10 +624,10 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         NoteItems.Clear();
         ClearTodoItems();
 
-        PinnedItems.Add(new PinnedItemViewModel("p1", "Keep this note tied to the current work context."));
-        TodoItems.Add(new TodoItemViewModel("t1", "Sketch Slice 3 persistence behavior."));
-        CommandItems.Add(new CommandItemViewModel("c1", "dotnet build"));
-        NoteItems.Add(new NoteItemViewModel("n1", "Slice 3 saves the default note locally as JSON."));
+        PinnedItems.Add(new PinnedItemViewModel("p1", "Pin a reminder you want to keep visible for this window."));
+        TodoItems.Add(new TodoItemViewModel("t1", "Add a to-do, then check it off when it's done."));
+        CommandItems.Add(new CommandItemViewModel("c1", "echo Hello from SessionPad"));
+        NoteItems.Add(new NoteItemViewModel("n1", "Write freeform notes here. Everything stays on this device — no cloud, no login."));
     }
 
     private void OpenLocalDataFolder()
@@ -1203,40 +1149,16 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 
     private sealed record SearchMatch(string Section, string Text, int Total);
 
-    private void ApplyHotkey()
-    {
-        if (_selectedHotkey is null
-            || string.Equals(_selectedHotkey.Token, _appliedHotkey.Token, StringComparison.Ordinal))
-        {
-            HotkeyStatus = $"Current: {_appliedHotkey.Display}";
-            return;
-        }
+    public void NotifyHotkeyApplied() => _settingsPanel.NotifyHotkeyApplied();
 
-        HotkeyChangeRequested?.Invoke(this, _selectedHotkey);
-    }
+    public void NotifyHotkeyRevertedToPrevious(string? reason) =>
+        _settingsPanel.NotifyHotkeyRevertedToPrevious(reason);
 
-    public void NotifyHotkeyApplied(bool success, string? error)
-    {
-        if (success)
-        {
-            _appliedHotkey = _selectedHotkey;
-            _settingsService.SaveHotkey(_appliedHotkey.Token);
-            OnPropertyChanged(nameof(AppliedHotkey));
-            HotkeyStatus = $"Hotkey set to {_appliedHotkey.Display}";
-            return;
-        }
+    public void NotifyHotkeyUnavailable(string? reason) =>
+        _settingsPanel.NotifyHotkeyUnavailable(reason);
 
-        SelectedHotkey = _appliedHotkey;
-        HotkeyStatus =
-            $"Could not set that shortcut ({error ?? "unknown error"}). Still using {_appliedHotkey.Display}.";
-    }
-
-    public void NotifyHotkeyRegistrationFailed(string display, int win32Error)
-    {
-        HotkeyStatus =
-            $"Could not register {display} (Win32 error {win32Error}). It may be in use by another app.";
-        ShowStatusToast($"Attach shortcut {display} is unavailable — it may be in use by another app.");
-    }
+    public void NotifyHotkeyRegistrationFailed(string display, int win32Error) =>
+        _settingsPanel.NotifyHotkeyRegistrationFailed(display, win32Error);
 
     private void ShowCopyFeedback(string message)
     {

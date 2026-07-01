@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace SessionPad.App.Services;
 
-public sealed class SettingsService
+public sealed class SettingsService : ISettingsService
 {
     private const string AppDirectoryName = "SessionPad";
     private const string SettingsFileName = "settings.json";

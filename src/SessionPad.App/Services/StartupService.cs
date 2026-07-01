@@ -3,7 +3,7 @@ using Microsoft.Win32;
 
 namespace SessionPad.App.Services;
 
-public sealed class StartupService
+public sealed class StartupService : IStartupService
 {
     public const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     public const string ValueName = "SessionPad";
