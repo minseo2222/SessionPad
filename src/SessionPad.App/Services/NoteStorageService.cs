@@ -95,7 +95,21 @@ public sealed class NoteStorageService
 
         foreach (var session in LoadSessionIndex().Sessions)
         {
-            var note = LoadSessionNote(session);
+            SessionNote? note;
+            try
+            {
+                note = LoadSessionNote(session);
+            }
+            catch (InvalidOperationException ex)
+            {
+                // A corrupt or malicious index entry (e.g. a NoteFile that escapes the
+                // app data directory) is rejected by GetAbsoluteStoragePath. Skip it so a
+                // single bad entry never crashes the session list; the rejection stands.
+                Debug.WriteLine(
+                    $"SessionPad skipped an unloadable session '{session.SessionId}': {ex.Message}");
+                continue;
+            }
+
             if (note is not null)
             {
                 var name = string.IsNullOrWhiteSpace(session.DisplayName)
@@ -175,8 +189,9 @@ public sealed class NoteStorageService
 
             if (Directory.Exists(BackupsDirectory))
             {
-                var prefix = session.SessionId + ".";
-                foreach (var backup in Directory.GetFiles(BackupsDirectory, $"{session.SessionId}.*.json"))
+                var backupStem = SanitizeFileStem(DeriveBackupKey(session));
+                var prefix = backupStem + ".";
+                foreach (var backup in Directory.GetFiles(BackupsDirectory, $"{backupStem}.*.json"))
                 {
                     if (Path.GetFileName(backup).StartsWith(prefix, StringComparison.Ordinal))
                     {
@@ -227,7 +242,21 @@ public sealed class NoteStorageService
             throw new InvalidOperationException("Session storage paths must be relative.");
         }
 
-        return Path.Combine(AppDataDirectory, relativePath.Replace('/', Path.DirectorySeparatorChar));
+        var combined = Path.Combine(AppDataDirectory, relativePath.Replace('/', Path.DirectorySeparatorChar));
+        var fullPath = Path.GetFullPath(combined);
+
+        var root = Path.GetFullPath(AppDataDirectory);
+        var rootWithSeparator = root.EndsWith(Path.DirectorySeparatorChar)
+            ? root
+            : root + Path.DirectorySeparatorChar;
+
+        if (!string.Equals(fullPath, root, StringComparison.OrdinalIgnoreCase)
+            && !fullPath.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Session storage paths must stay inside the app data directory.");
+        }
+
+        return fullPath;
     }
 
     private static string DeriveBackupKey(SessionSummary session)
@@ -235,16 +264,35 @@ public sealed class NoteStorageService
         return string.IsNullOrWhiteSpace(session.SessionId) ? "session" : session.SessionId;
     }
 
+    /// <summary>
+    /// Reduces an arbitrary key (which may include characters illegal in a file name,
+    /// such as a SessionId) to a filename-safe stem for backup files.
+    /// </summary>
+    private static string SanitizeFileStem(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return "session";
+        }
+
+        var invalid = Path.GetInvalidFileNameChars();
+        var sanitized = new string(key
+            .Select(c => Array.IndexOf(invalid, c) >= 0 ? '_' : c)
+            .ToArray());
+        return string.IsNullOrWhiteSpace(sanitized) ? "session" : sanitized;
+    }
+
     private void TryWriteBackup(string sessionKey, SessionNote note)
     {
         // Best-effort: a backup failure must never break the primary save.
+        var stem = SanitizeFileStem(sessionKey);
         try
         {
             Directory.CreateDirectory(BackupsDirectory);
             var timestamp = _clock.UtcNow.ToString("yyyyMMddHHmmssfff");
-            var backupPath = Path.Combine(BackupsDirectory, $"{sessionKey}.{timestamp}.json");
+            var backupPath = NextAvailableBackupPath(stem, timestamp);
             File.WriteAllText(backupPath, JsonSerializer.Serialize(note, JsonOptions));
-            PruneBackups(sessionKey);
+            PruneBackups(stem);
         }
         catch (Exception ex) when (ex is IOException
             or UnauthorizedAccessException
@@ -253,6 +301,24 @@ public sealed class NoteStorageService
         {
             Debug.WriteLine($"SessionPad could not write a backup for '{sessionKey}': {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Returns a backup path that does not yet exist, so two saves that land on the
+    /// same timestamp (e.g. within one clock tick) produce distinct files instead of
+    /// one overwriting the other.
+    /// </summary>
+    private string NextAvailableBackupPath(string stem, string timestamp)
+    {
+        var path = Path.Combine(BackupsDirectory, $"{stem}.{timestamp}.json");
+        var counter = 1;
+        while (File.Exists(path))
+        {
+            path = Path.Combine(BackupsDirectory, $"{stem}.{timestamp}.{counter}.json");
+            counter++;
+        }
+
+        return path;
     }
 
     private void PruneBackups(string sessionKey)
