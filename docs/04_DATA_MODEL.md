@@ -14,7 +14,11 @@ public sealed record AppSettings
     public WindowingSettings Windowing { get; init; } = new();
     public PrivacySettings Privacy { get; init; } = new();
 }
-SessionNote
+```
+
+## SessionNote
+
+```csharp
 public sealed record SessionNote
 {
     public int SchemaVersion { get; init; } = 1;
@@ -28,7 +32,11 @@ public sealed record SessionNote
     public DateTimeOffset CreatedAt { get; init; }
     public DateTimeOffset UpdatedAt { get; init; }
 }
-Enums
+```
+
+## Enums
+
+```csharp
 public enum DockSide
 {
     Left,
@@ -43,7 +51,11 @@ public enum NotePanelState
     CompactNote,
     ExpandedNote
 }
-NoteSections
+```
+
+## NoteSections
+
+```csharp
 public sealed record NoteSections
 {
     public List<PinnedItem> Pinned { get; init; } = new();
@@ -51,7 +63,11 @@ public sealed record NoteSections
     public List<CommandItem> Commands { get; init; } = new();
     public List<NoteTextItem> Notes { get; init; } = new();
 }
-Item Types
+```
+
+## Item Types
+
+```csharp
 public sealed record PinnedItem
 {
     public required string Id { get; init; }
@@ -81,7 +97,11 @@ public sealed record NoteTextItem
     public required string Text { get; init; }
     public int SortOrder { get; init; }
 }
-WindowIdentity
+```
+
+## WindowIdentity
+
+```csharp
 public sealed record WindowIdentity
 {
     public required string ProcessName { get; init; }
@@ -94,10 +114,13 @@ public sealed record WindowIdentity
 
     public int MatchVersion { get; init; } = 1;
 }
-Storage Shape
+```
+
+## Storage Shape
 
 Future storage location:
 
+```text
 %APPDATA%/SessionPad/
   settings.json
   sessions.index.json
@@ -105,7 +128,11 @@ Future storage location:
     <sessionId>.json
   backups/
     <sessionId>.<timestamp>.json
-Example Note JSON
+```
+
+## Example Note JSON
+
+```json
 {
   "schemaVersion": 1,
   "sessionId": "example-session-id",
@@ -146,7 +173,9 @@ Example Note JSON
   "createdAt": "2026-05-28T00:00:00Z",
   "updatedAt": "2026-05-28T00:00:00Z"
 }
-Important Rule
+```
+
+## Important Rule
 
 Do not persist HWND.
 

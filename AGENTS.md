@@ -1,5 +1,12 @@
 # AGENTS.md
 
+> **Active instruction file:** `CLAUDE.md` is the single source of truth for how to
+> work in this repo. This `AGENTS.md` is retained for product identity and historical
+> slice planning. Where it describes "Slice 1" constraints (e.g. "do not implement
+> persistence / global hotkeys / Win32 tracking / UI Automation"), those are
+> **historical** — persistence, hotkeys, and Win32 tracking now exist and are core
+> features. See `CLAUDE.md` → Current State.
+
 This repository contains SessionPad, a Windows-first local desktop utility.
 
 ## Product Identity
@@ -103,29 +110,36 @@ src/
     Services/
     Native/
 docs/
+```
 
-Native/ should be reserved for later Win32 P/Invoke declarations.
+`Native/` should be reserved for later Win32 P/Invoke declarations.
 
-Build and Verification
+## Build and Verification
 
 After implementation, run:
 
+```
 dotnet build
+```
 
 If tests are added later, run:
 
+```
 dotnet test
+```
 
-For Slice 1, manual verification is enough:
+> Historical (Slice 1 only). For the original scaffold slice, manual verification was
+> enough:
+>
+> - App launches.
+> - A SessionPad window appears.
+> - User can switch between Docked Tab and Compact Note states.
+> - Compact Note shows Pinned, Todo, Commands, Notes sections.
+> - No persistence, hotkey, or external window tracking was implemented yet.
 
-App launches.
-A SessionPad window appears.
-User can switch between Docked Tab and Compact Note states.
-Compact Note shows Pinned, Todo, Commands, Notes sections.
-No persistence, hotkey, or external window tracking is implemented yet.
-Documentation Discipline
+## Documentation Discipline
 
-When product or architecture decisions change, update the relevant file in docs/.
+When product or architecture decisions change, update the relevant file in `docs/`.
 
 Do not silently expand MVP scope.
 

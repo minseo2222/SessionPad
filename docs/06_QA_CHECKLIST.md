@@ -8,121 +8,137 @@ Run:
 
 ```bash
 dotnet build
+```
 
 Expected:
 
-Build succeeds.
-No errors.
-Launch
+- Build succeeds.
+- No errors.
+
+### Launch
 
 Run the app from IDE or command line.
 
 Expected:
 
-App starts.
-Window title is SessionPad.
-A small note-like window appears.
-Docked Tab State
+- App starts.
+- Window title is SessionPad.
+- A small note-like window appears.
+
+### Docked Tab State
 
 Expected:
 
-Docked Tab state is visible.
-It is compact.
-It clearly represents SessionPad.
-There is a way to expand it.
-Compact Note State
+- Docked Tab state is visible.
+- It is compact.
+- It clearly represents SessionPad.
+- There is a way to expand it.
+
+### Compact Note State
 
 Expected:
 
-Compact Note state is visible after expanding.
-It contains these sections:
-Pinned
-Todo
-Commands
-Notes
-There is a way to collapse back to Docked Tab.
-Scope Check
+- Compact Note state is visible after expanding.
+- It contains these sections:
+  - Pinned
+  - Todo
+  - Commands
+  - Notes
+- There is a way to collapse back to Docked Tab.
+
+### Scope Check
 
 Confirm Slice 1 does not include:
 
-Global hotkey
-External window tracking
-Win32 hooks
-UI Automation
-Persistence
-Cloud
-AI
-Later MVP QA
-Attach to VS Code
+- Global hotkey
+- External window tracking
+- Win32 hooks
+- UI Automation
+- Persistence
+- Cloud
+- AI
+
+## Later MVP QA
+
+### Attach to VS Code
 
 Expected:
 
-Focus VS Code.
-Trigger attach.
-SessionPad appears beside VS Code.
-Attach to Windows Terminal
+- Focus VS Code.
+- Trigger attach.
+- SessionPad appears beside VS Code.
+
+### Attach to Windows Terminal
 
 Expected:
 
-Focus Windows Terminal.
-Trigger attach.
-SessionPad appears beside Windows Terminal.
-Move Target Window
+- Focus Windows Terminal.
+- Trigger attach.
+- SessionPad appears beside Windows Terminal.
+
+### Move Target Window
 
 Expected:
 
-Move target window.
-SessionPad follows.
-Resize Target Window
+- Move target window.
+- SessionPad follows.
+
+### Resize Target Window
 
 Expected:
 
-Resize target window.
-SessionPad remains attached to the chosen edge.
-Minimize Target Window
+- Resize target window.
+- SessionPad remains attached to the chosen edge.
+
+### Minimize Target Window
 
 Expected:
 
-Minimize target window.
-SessionPad hides.
-Restore Target Window
+- Minimize target window.
+- SessionPad hides.
+
+### Restore Target Window
 
 Expected:
 
-Restore target window.
-SessionPad returns.
-Local Persistence
+- Restore target window.
+- SessionPad returns.
+
+### Local Persistence
 
 Expected:
 
-Edit note.
-Exit app.
-Restart app.
-Note content remains.
-Multi-monitor
+- Edit note.
+- Exit app.
+- Restart app.
+- Note content remains.
+
+### Multi-monitor
 
 Expected:
 
-Attach on primary monitor.
-Attach on secondary monitor.
-Move target between monitors.
-SessionPad remains positioned correctly.
-DPI
+- Attach on primary monitor.
+- Attach on secondary monitor.
+- Move target between monitors.
+- SessionPad remains positioned correctly.
+
+### DPI
 
 Expected:
 
-Test with 100%, 125%, and 150% scaling where available.
-SessionPad does not drift away from target window.
-Privacy QA
+- Test with 100%, 125%, and 150% scaling where available.
+- SessionPad does not drift away from target window.
+
+## Privacy QA
 
 Confirm:
 
-No network calls.
-No login.
-No telemetry.
-No screen capture.
-No terminal output capture.
-No automatic reading of editor files.
+- No network calls.
+- No login.
+- No telemetry.
+- No screen capture.
+- No terminal output capture.
+- No automatic reading of editor files.
 
 ---
 
@@ -223,3 +239,4 @@ After implementation:
 3. Report whether the build passed.
 4. Summarize files created or changed.
 5. Mention anything intentionally not implemented because it belongs to later slices.
+```
