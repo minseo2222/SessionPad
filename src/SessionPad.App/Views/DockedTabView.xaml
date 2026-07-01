@@ -13,12 +13,14 @@
             BorderBrush="{DynamicResource Border.Hairline}"
             BorderThickness="1"
             CornerRadius="8"
+            AutomationProperties.Name="SessionPad docked tab. Drag to move."
             MouseLeftButtonDown="OnTabMoveMouseLeftButtonDown">
         <Button Command="{Binding ExpandCommand}"
                 Cursor="Hand"
                 Background="Transparent"
                 BorderThickness="0"
-                Padding="0">
+                Padding="0"
+                AutomationProperties.Name="Expand SessionPad">
             <StackPanel HorizontalAlignment="Center"
                         VerticalAlignment="Center">
                 <TextBlock Text="SP"
