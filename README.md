@@ -75,6 +75,15 @@ Pass `-Version 0.3.2` to produce a versioned folder such as `artifacts/SessionPa
 
 The script creates a framework-dependent publish by default. It does not create an installer, MSIX package, or signed build.
 
+To produce a distributable package (self-contained publish, bundled `LICENSE.md`
+and `PRIVACY.md`, versioned zip plus SHA256 checksum under `artifacts/`):
+
+```powershell
+scripts/package-release.ps1 -Version 0.5.0-beta.1
+```
+
+See [`DEPLOY.md`](DEPLOY.md) for the full release procedure.
+
 ## Hotkey Attach
 
 Press `Ctrl+Alt+N` while another app is focused.
@@ -184,10 +193,12 @@ SessionPad is proprietary software distributed under the terms in
 - Per-Monitor V2 DPI awareness is enabled, so the pad renders crisply across
   mixed-DPI monitors. Multi-monitor positioning still benefits from manual checking
   on your specific setup.
-- No installer or MSIX package yet.
+- No installer or MSIX package yet; distribution is a portable zip produced by
+  `scripts/package-release.ps1`. The executable is unsigned, so Windows
+  SmartScreen may warn on first run.
 
-See `docs/V0_3_0_RELEASE_NOTES.md` for the latest additions (item reordering,
-auto-track, WinEvent following, note backups, search, and a configurable shortcut).
+See `docs/V0_5_0_RELEASE_NOTES.md` for the latest additions (storage and hotkey
+hardening, accessibility polish, and distribution packaging).
 
 ## Project Layout
 
