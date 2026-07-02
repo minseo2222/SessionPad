@@ -160,6 +160,13 @@ SessionPad is local-first:
 - Local errors (e.g. a failed save or an unavailable shortcut) are shown on screen
   only; nothing is reported or sent anywhere.
 
+The full data-behavior statement is in [`PRIVACY.md`](PRIVACY.md).
+
+## License
+
+SessionPad is proprietary software distributed under the terms in
+[`LICENSE.md`](LICENSE.md) (beta draft).
+
 ## Known Limitations
 
 - Window identity is currently `processName + normalizedWindowTitle`. Two windows
