@@ -84,7 +84,14 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         // Re-raise the panel's property changes as our own so existing bindings on the
         // delegating properties (IsDarkTheme, HotkeyStatus, …) update, and surface its
         // hotkey messages through our shared status toast.
-        _settingsPanel.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
+        _settingsPanel.PropertyChanged += (_, e) =>
+        {
+            OnPropertyChanged(e.PropertyName);
+            if (e.PropertyName == nameof(SettingsPanelViewModel.IsAttachHintDismissed))
+            {
+                OnPropertyChanged(nameof(IsAttachHintVisible));
+            }
+        };
         _settingsPanel.StatusToastRequested += (_, message) => ShowStatusToast(message);
 
         ExpandCommand = new RelayCommand(() => SetPanelStateAndSave(NotePanelState.CompactNote));
@@ -92,6 +99,7 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
         SelectNoteTabCommand = new RelayCommand(SelectNoteTab);
         ToggleSettingsCommand = new RelayCommand(() => IsSettingsOpen = !IsSettingsOpen);
         RenameSessionCommand = new RelayCommand(RenameSession);
+        DismissAttachHintCommand = new RelayCommand(() => _settingsPanel.DismissAttachHint());
         OpenLocalDataFolderCommand = new RelayCommand(OpenLocalDataFolder);
         DeleteLocalDataCommand = new RelayCommand(() => IsDeleteConfirmPending = true);
         ConfirmDeleteLocalDataCommand = new RelayCommand(() =>
@@ -161,6 +169,11 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
     }
 
     public ICommand ExpandCommand { get; }
+
+    public ICommand DismissAttachHintCommand { get; }
+
+    /// <summary>First-run hint stays until the first successful attach or a manual close.</summary>
+    public bool IsAttachHintVisible => !_settingsPanel.IsAttachHintDismissed;
 
     public ICommand CollapseCommand { get; }
 
@@ -532,6 +545,11 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 
     public void SetAttachmentResult(WindowAttachmentResult result)
     {
+        if (result.IsAttached)
+        {
+            _settingsPanel.DismissAttachHint();
+        }
+
         IsAttachedToWindow = result.IsAttached;
         AttachmentStatus = result.Status;
         AttachmentSide = result.Side;

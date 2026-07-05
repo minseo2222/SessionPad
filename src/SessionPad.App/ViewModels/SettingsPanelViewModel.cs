@@ -42,6 +42,7 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
     private string _startupStatus;
     private bool _isDarkTheme;
     private bool _autoTrackForeground;
+    private bool _isAttachHintDismissed;
 
     public SettingsPanelViewModel(
         ISettingsService settingsService,
@@ -59,6 +60,7 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
             ThemeService.DarkThemeName,
             StringComparison.OrdinalIgnoreCase);
         _autoTrackForeground = _settingsService.LoadAutoTrackForeground();
+        _isAttachHintDismissed = _settingsService.LoadAttachHintDismissed();
 
         var hotkeyToken = _settingsService.LoadHotkey();
         _appliedHotkey = Array.Find(HotkeyPresets, option => option.Token == hotkeyToken) ?? HotkeyPresets[0];
@@ -163,6 +165,24 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
             OnPropertyChanged();
             AutoTrackForegroundChanged?.Invoke(this, value);
         }
+    }
+
+    public bool IsAttachHintDismissed
+    {
+        get => _isAttachHintDismissed;
+        private set => SetField(ref _isAttachHintDismissed, value);
+    }
+
+    /// <summary>Hides the first-run attach hint for good (first attach or manual close).</summary>
+    public void DismissAttachHint()
+    {
+        if (_isAttachHintDismissed)
+        {
+            return;
+        }
+
+        IsAttachHintDismissed = true;
+        _settingsService.SaveAttachHintDismissed(true);
     }
 
     public void NotifyHotkeyApplied()

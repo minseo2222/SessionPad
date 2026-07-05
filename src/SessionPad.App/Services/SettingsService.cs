@@ -55,6 +55,16 @@ public sealed class SettingsService : ISettingsService
         Save(Load() with { Hotkey = string.IsNullOrWhiteSpace(token) ? DefaultHotkey : token });
     }
 
+    public bool LoadAttachHintDismissed()
+    {
+        return Load().AttachHintDismissed;
+    }
+
+    public void SaveAttachHintDismissed(bool value)
+    {
+        Save(Load() with { AttachHintDismissed = value });
+    }
+
     private AppSettings Load()
     {
         if (!File.Exists(SettingsPath))
@@ -129,5 +139,6 @@ public sealed class SettingsService : ISettingsService
     private sealed record AppSettings(
         string Theme,
         bool AutoTrackForeground = false,
-        string Hotkey = DefaultHotkey);
+        string Hotkey = DefaultHotkey,
+        bool AttachHintDismissed = false);
 }

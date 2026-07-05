@@ -17,4 +17,8 @@ public interface ISettingsService
     string LoadHotkey();
 
     void SaveHotkey(string token);
+
+    bool LoadAttachHintDismissed();
+
+    void SaveAttachHintDismissed(bool value);
 }

@@ -11,10 +11,12 @@ public class SettingsPanelViewModelTests
         public string StoredTheme { get; set; } = "Dark";
         public bool StoredAutoTrack { get; set; }
         public string StoredHotkey { get; set; } = "Ctrl+Alt+N";
+        public bool StoredAttachHintDismissed { get; set; }
 
         public string? SavedTheme { get; private set; }
         public bool? SavedAutoTrack { get; private set; }
         public string? SavedHotkey { get; private set; }
+        public bool? SavedAttachHintDismissed { get; private set; }
 
         public string LoadTheme() => StoredTheme;
         public void SaveTheme(string theme) => SavedTheme = theme;
@@ -22,6 +24,8 @@ public class SettingsPanelViewModelTests
         public void SaveAutoTrackForeground(bool value) => SavedAutoTrack = value;
         public string LoadHotkey() => StoredHotkey;
         public void SaveHotkey(string token) => SavedHotkey = token;
+        public bool LoadAttachHintDismissed() => StoredAttachHintDismissed;
+        public void SaveAttachHintDismissed(bool value) => SavedAttachHintDismissed = value;
     }
 
     private sealed class FakeStartupService : IStartupService
@@ -65,6 +69,33 @@ public class SettingsPanelViewModelTests
             settings ?? new FakeSettingsService(),
             startup ?? new FakeStartupService(),
             new ThemeService());
+    }
+
+    [Fact]
+    public void Attach_hint_starts_visible_and_dismissing_persists()
+    {
+        var settings = new FakeSettingsService();
+        var panel = Panel(settings);
+
+        Assert.False(panel.IsAttachHintDismissed);
+
+        panel.DismissAttachHint();
+
+        Assert.True(panel.IsAttachHintDismissed);
+        Assert.True(settings.SavedAttachHintDismissed);
+    }
+
+    [Fact]
+    public void Previously_dismissed_attach_hint_stays_dismissed()
+    {
+        var settings = new FakeSettingsService { StoredAttachHintDismissed = true };
+        var panel = Panel(settings);
+
+        Assert.True(panel.IsAttachHintDismissed);
+
+        // Dismissing again is a no-op and must not rewrite settings.
+        panel.DismissAttachHint();
+        Assert.Null(settings.SavedAttachHintDismissed);
     }
 
     [Fact]

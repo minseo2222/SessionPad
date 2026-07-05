@@ -127,6 +127,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
@@ -445,7 +446,73 @@
                     </Grid>
                 </Border>
 
-                <Grid Grid.Row="2"
+                <Border Grid.Row="2"
+                        Margin="0,0,0,12"
+                        Background="{DynamicResource Surface.Raised}"
+                        BorderBrush="{DynamicResource Border.Hairline}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="12,10,8,10">
+                    <Border.Style>
+                        <Style TargetType="{x:Type Border}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsAttachHintVisible}" Value="True" />
+                                        <Condition Binding="{Binding IsSettingsOpen}" Value="False" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Attach this pad to the window you're working in"
+                                       FontSize="12.5"
+                                       FontWeight="Medium"
+                                       TextWrapping="Wrap" />
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="0,6,0,0">
+                                <Border Background="{DynamicResource Surface.Code}"
+                                        BorderBrush="{DynamicResource Border.Hairline}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Padding="6,1"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding AppliedHotkey.Display}"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource Text.Code}" />
+                                </Border>
+                                <TextBlock Text="while that window is focused"
+                                           FontSize="12"
+                                           Foreground="{DynamicResource Text.Muted}"
+                                           VerticalAlignment="Center"
+                                           Margin="7,0,0,0" />
+                            </StackPanel>
+                        </StackPanel>
+                        <Button Grid.Column="1"
+                                Command="{Binding DismissAttachHintCommand}"
+                                Content="&#x2715;"
+                                Width="22"
+                                Height="22"
+                                Padding="0"
+                                FontSize="10"
+                                VerticalAlignment="Top"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="{DynamicResource Text.Faint}"
+                                ToolTip="Hide this tip"
+                                AutomationProperties.Name="Hide attach tip" />
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="3"
                       Margin="0,0,0,12">
                     <Border Background="{DynamicResource Surface.Capture}"
                             BorderBrush="{DynamicResource Border.Hairline}"
@@ -685,7 +752,7 @@
                     </Border>
                 </Grid>
 
-                <Grid Grid.Row="3">
+                <Grid Grid.Row="4">
                     <Grid>
                         <Grid.Style>
                             <Style TargetType="{x:Type Grid}">
@@ -1717,7 +1784,7 @@
                     </Grid>
                 </Grid>
 
-                <Border Grid.Row="4"
+                <Border Grid.Row="5"
                         Margin="0,9,0,0"
                         Padding="0,9,0,0"
                         BorderBrush="{DynamicResource Border.Hairline}"
