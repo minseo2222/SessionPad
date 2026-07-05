@@ -251,6 +251,8 @@ public sealed class FloatingNoteViewModel : INotifyPropertyChanged
 
     public string HotkeyStatus => _settingsPanel.HotkeyStatus;
 
+    public bool IsHotkeyStatusWarning => _settingsPanel.IsHotkeyStatusWarning;
+
     public ObservableCollection<PinnedItemViewModel> PinnedItems { get; } = new();
 
     public ObservableCollection<TodoItemViewModel> TodoItems { get; } = new();

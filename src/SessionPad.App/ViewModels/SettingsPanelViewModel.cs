@@ -43,6 +43,7 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
     private bool _isDarkTheme;
     private bool _autoTrackForeground;
     private bool _isAttachHintDismissed;
+    private bool _isHotkeyStatusWarning;
 
     public SettingsPanelViewModel(
         ISettingsService settingsService,
@@ -95,6 +96,14 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
     {
         get => _hotkeyStatus;
         private set => SetField(ref _hotkeyStatus, value);
+    }
+
+    /// <summary>True while <see cref="HotkeyStatus"/> reports a registration problem,
+    /// so the view can color only real warnings — neutral statuses stay muted.</summary>
+    public bool IsHotkeyStatusWarning
+    {
+        get => _isHotkeyStatusWarning;
+        private set => SetField(ref _isHotkeyStatusWarning, value);
     }
 
     public bool StartOnLogin
@@ -191,6 +200,7 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
         _settingsService.SaveHotkey(_appliedHotkey.Token);
         OnPropertyChanged(nameof(AppliedHotkey));
         HotkeyStatus = $"Hotkey set to {_appliedHotkey.Display}";
+        IsHotkeyStatusWarning = false;
         _isHotkeyActive = true;
     }
 
@@ -206,6 +216,7 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
         HotkeyStatus = string.IsNullOrWhiteSpace(reason)
             ? $"Couldn't set {attempted.Display}. Still using {_appliedHotkey.Display}."
             : $"Couldn't set {attempted.Display} — {reason}. Still using {_appliedHotkey.Display}.";
+        IsHotkeyStatusWarning = true;
         _isHotkeyActive = true; // the previous hotkey was restored and is active
     }
 
@@ -221,6 +232,7 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
             ? $"Couldn't set {attempted.Display}, and no attach shortcut is active now. Try another combination."
             : $"Couldn't set {attempted.Display} — {reason}. No attach shortcut is active now; try another combination.";
         StatusToastRequested?.Invoke(this, "No attach shortcut is active — pick another in Settings.");
+        IsHotkeyStatusWarning = true;
         _isHotkeyActive = false;
     }
 
@@ -230,6 +242,7 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
         HotkeyStatus =
             $"Couldn't register {display} — it may be in use by another app. Pick another shortcut in Settings.";
         StatusToastRequested?.Invoke(this, $"Attach shortcut {display} is unavailable — it may be in use by another app.");
+        IsHotkeyStatusWarning = true;
         _isHotkeyActive = false;
     }
 
@@ -238,6 +251,7 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
         if (_selectedHotkey is null)
         {
             HotkeyStatus = $"Current: {_appliedHotkey.Display}";
+            IsHotkeyStatusWarning = false;
             return;
         }
 
@@ -248,6 +262,7 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
             && string.Equals(_selectedHotkey.Token, _appliedHotkey.Token, StringComparison.Ordinal))
         {
             HotkeyStatus = $"Current: {_appliedHotkey.Display}";
+            IsHotkeyStatusWarning = false;
             return;
         }
 

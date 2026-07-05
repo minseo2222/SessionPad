@@ -799,7 +799,7 @@
                                             VerticalAlignment="Center" />
                                 </Grid>
                                 <TextBlock Margin="0,6,0,0"
-                                           Foreground="{DynamicResource Status}"
+                                           Foreground="{DynamicResource Text.Muted}"
                                            TextWrapping="Wrap"
                                            Text="{Binding SearchStatus, Mode=OneWay}" />
                                 <ItemsControl Margin="0,6,0,0"
@@ -1053,7 +1053,7 @@
                                     </StackPanel>
                                 </StackPanel>
                                 <TextBlock Margin="0,8,0,0"
-                                           Foreground="{DynamicResource Status}"
+                                           Foreground="{DynamicResource Text.Muted}"
                                            TextWrapping="Wrap"
                                            Text="{Binding LocalDataStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Local data ready, StringFormat={}Status: {0}}" />
 
@@ -1061,7 +1061,7 @@
                                           Content="Start with Windows"
                                           IsChecked="{Binding StartOnLogin, Mode=TwoWay}" />
                                 <TextBlock Margin="0,6,0,0"
-                                           Foreground="{DynamicResource Status}"
+                                           Foreground="{DynamicResource Text.Muted}"
                                            TextWrapping="Wrap"
                                            Text="{Binding StartupStatus, Mode=OneWay, FallbackValue=Startup ready, StringFormat={}Startup: {0}}" />
                                 <CheckBox Margin="0,8,0,0"
@@ -1099,9 +1099,19 @@
                                             VerticalAlignment="Center" />
                                 </Grid>
                                 <TextBlock Margin="0,6,0,0"
-                                           Foreground="{DynamicResource Status}"
                                            TextWrapping="Wrap"
-                                           Text="{Binding HotkeyStatus, Mode=OneWay}" />
+                                           Text="{Binding HotkeyStatus, Mode=OneWay}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Setter Property="Foreground" Value="{DynamicResource Text.Muted}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsHotkeyStatusWarning}" Value="True">
+                                                    <Setter Property="Foreground" Value="{DynamicResource Status}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
 
                                 <Expander Margin="0,12,0,0"
                                           Foreground="{DynamicResource Text.Primary}">
@@ -1132,7 +1142,7 @@
                                         <TextBlock Foreground="{DynamicResource Text.Muted}"
                                                    TextWrapping="Wrap"
                                                    Text="{Binding CurrentSessionNoteFile, Mode=OneWay, TargetNullValue=(none), FallbackValue=Note file: (none), StringFormat={}Note file: {0}}" />
-                                        <TextBlock Foreground="{DynamicResource Status}"
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
                                                    TextWrapping="Wrap"
                                                    Text="{Binding CurrentSessionStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Session status: Ready, StringFormat={}Session status: {0}}" />
 

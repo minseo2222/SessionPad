@@ -99,6 +99,19 @@ public class SettingsPanelViewModelTests
     }
 
     [Fact]
+    public void Hotkey_status_warning_tracks_failures_and_clears_on_success()
+    {
+        var panel = Panel();
+        Assert.False(panel.IsHotkeyStatusWarning);
+
+        panel.NotifyHotkeyUnavailable("it may be in use by another app");
+        Assert.True(panel.IsHotkeyStatusWarning);
+
+        panel.NotifyHotkeyApplied();
+        Assert.False(panel.IsHotkeyStatusWarning);
+    }
+
+    [Fact]
     public void Applying_a_different_hotkey_raises_a_change_request()
     {
         var panel = Panel();
