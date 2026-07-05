@@ -62,6 +62,24 @@
             <Setter Property="Opacity" Value="1" />
         </Style>
 
+        <Style x:Key="EnterHintKeycapStyle"
+               TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="{DynamicResource Surface.Code}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Border.Hairline}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="5,1" />
+            <Setter Property="Margin" Value="8,0,6,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Opacity" Value="0" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource AncestorType=Grid}}"
+                             Value="True">
+                    <Setter Property="Opacity" Value="1" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
         <Style x:Key="EmptyStateTextStyle"
                TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource Text.Faint}" />
@@ -133,7 +151,7 @@
                             ToolTip="Drag near a window to attach"
                             AutomationProperties.Name="Drag to attach to a window"
                             MouseLeftButtonDown="OnDragAttachMouseLeftButtonDown">
-                        <TextBlock Text="Drag"
+                        <TextBlock Text="⠿"
                                    FontSize="13"
                                    Foreground="{DynamicResource Text.Faint}"
                                    VerticalAlignment="Center" />
@@ -479,12 +497,12 @@
                                     <KeyBinding Key="Return" Command="{Binding AddPinnedCommand}" />
                                 </TextBox.InputBindings>
                             </TextBox>
-                            <TextBlock Grid.Column="2"
-                                       Text="↵"
-                                       FontSize="10"
-                                       Foreground="{DynamicResource Text.Faint}"
-                                       VerticalAlignment="Center"
-                                       Margin="8,0,6,0" />
+                            <Border Grid.Column="2"
+                                    Style="{StaticResource EnterHintKeycapStyle}">
+                                <TextBlock Text="↵"
+                                           FontSize="10"
+                                           Foreground="{DynamicResource Text.Muted}" />
+                            </Border>
                         </Grid>
                     </Border>
 
@@ -538,12 +556,12 @@
                                     <KeyBinding Key="Return" Command="{Binding AddTodoCommand}" />
                                 </TextBox.InputBindings>
                             </TextBox>
-                            <TextBlock Grid.Column="2"
-                                       Text="↵"
-                                       FontSize="10"
-                                       Foreground="{DynamicResource Text.Faint}"
-                                       VerticalAlignment="Center"
-                                       Margin="8,0,6,0" />
+                            <Border Grid.Column="2"
+                                    Style="{StaticResource EnterHintKeycapStyle}">
+                                <TextBlock Text="↵"
+                                           FontSize="10"
+                                           Foreground="{DynamicResource Text.Muted}" />
+                            </Border>
                         </Grid>
                     </Border>
 
@@ -598,12 +616,12 @@
                                     <KeyBinding Key="Return" Command="{Binding AddCommandItemCommand}" />
                                 </TextBox.InputBindings>
                             </TextBox>
-                            <TextBlock Grid.Column="2"
-                                       Text="↵"
-                                       FontSize="10"
-                                       Foreground="{DynamicResource Text.Faint}"
-                                       VerticalAlignment="Center"
-                                       Margin="8,0,6,0" />
+                            <Border Grid.Column="2"
+                                    Style="{StaticResource EnterHintKeycapStyle}">
+                                <TextBlock Text="↵"
+                                           FontSize="10"
+                                           Foreground="{DynamicResource Text.Muted}" />
+                            </Border>
                         </Grid>
                     </Border>
 
@@ -657,12 +675,12 @@
                                     <KeyBinding Key="Return" Command="{Binding AddNoteCommand}" />
                                 </TextBox.InputBindings>
                             </TextBox>
-                            <TextBlock Grid.Column="2"
-                                       Text="↵"
-                                       FontSize="10"
-                                       Foreground="{DynamicResource Text.Faint}"
-                                       VerticalAlignment="Center"
-                                       Margin="8,0,6,0" />
+                            <Border Grid.Column="2"
+                                    Style="{StaticResource EnterHintKeycapStyle}">
+                                <TextBlock Text="↵"
+                                           FontSize="10"
+                                           Foreground="{DynamicResource Text.Muted}" />
+                            </Border>
                         </Grid>
                     </Border>
                 </Grid>
