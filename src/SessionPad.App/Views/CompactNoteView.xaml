@@ -863,11 +863,20 @@
                                           Content="Pin to this app (ignore window title)"
                                           IsChecked="{Binding IsCurrentSessionPinned, Mode=TwoWay}" />
 
-                                <TextBlock Margin="0,14,0,0"
-                                           Text="Sessions"
-                                           FontWeight="Medium"
-                                           Foreground="{DynamicResource Text.Primary}" />
-                                <TextBlock Margin="0,6,0,0"
+                                <Expander Margin="0,14,0,0"
+                                          Foreground="{DynamicResource Text.Primary}">
+                                    <Expander.Header>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Sessions"
+                                                       FontWeight="Medium"
+                                                       Foreground="{DynamicResource Text.Primary}" />
+                                            <TextBlock Text="{Binding Sessions.Count, StringFormat={}({0})}"
+                                                       Margin="6,0,0,0"
+                                                       Foreground="{DynamicResource Text.Muted}" />
+                                        </StackPanel>
+                                    </Expander.Header>
+                                    <StackPanel Margin="0,4,0,0">
+                                <TextBlock Margin="0,2,0,0"
                                            Foreground="{DynamicResource Text.Faint}"
                                            TextWrapping="Wrap"
                                            Text="No saved sessions yet. Attach SessionPad to a window to start one.">
@@ -989,6 +998,8 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                 </ScrollViewer>
+                                    </StackPanel>
+                                </Expander>
 
                                 <TextBlock Margin="0,14,0,0"
                                            Text="Local Data"
