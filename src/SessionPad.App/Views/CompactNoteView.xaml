@@ -139,13 +139,61 @@
                                    VerticalAlignment="Center" />
                     </Border>
 
-                    <TextBlock Grid.Column="1"
-                               Margin="10,0,0,0"
-                               Text="SESSIONPAD"
-                               FontSize="10.5"
-                               FontWeight="Medium"
-                               Foreground="{DynamicResource Text.Muted}"
-                               VerticalAlignment="Center" />
+                    <Grid Grid.Column="1"
+                          Grid.ColumnSpan="2"
+                          Margin="8,0,8,0"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Left">
+                        <Border x:Name="SessionIdentityFlash"
+                                Background="{DynamicResource Accent}"
+                                CornerRadius="5"
+                                Margin="-6,-2"
+                                Opacity="0" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="●"
+                                       FontSize="8"
+                                       VerticalAlignment="Center"
+                                       Margin="0,1,6,0"
+                                       Foreground="{DynamicResource Status.Success}"
+                                       ToolTip="Attached to the target window">
+                                <TextBlock.Style>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsAttachedToWindow}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                                <DataTrigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimationUsingKeyFrames Storyboard.Target="{Binding ElementName=SessionIdentityFlash}"
+                                                                                           Storyboard.TargetProperty="Opacity">
+                                                                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0" />
+                                                                <LinearDoubleKeyFrame KeyTime="0:0:0.12" Value="0.22" />
+                                                                <LinearDoubleKeyFrame KeyTime="0:0:0.45" Value="0" />
+                                                            </DoubleAnimationUsingKeyFrames>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.EnterActions>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding CurrentSessionDisplayName}"
+                                       ToolTip="{Binding CurrentSessionDisplayName}"
+                                       FontSize="12"
+                                       FontWeight="Medium"
+                                       Foreground="{DynamicResource Text.Primary}"
+                                       TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center" />
+                        </Grid>
+                    </Grid>
 
                     <TextBlock Grid.Column="3"
                                Text="●"
