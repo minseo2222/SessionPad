@@ -62,7 +62,7 @@ dotnet build -c Release
 The publish script writes output under `artifacts/`, which is ignored by Git.
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/publish-release.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\publish-release.ps1
 ```
 
 Default output:
@@ -71,16 +71,24 @@ Default output:
 artifacts/SessionPad
 ```
 
-Pass `-Version 0.3.2` to produce a versioned folder such as `artifacts/SessionPad-v0.3.2`.
+Pass `-Version 0.5.0-beta.1` to produce a clean versioned staging folder such as
+`artifacts/SessionPad-v0.5.0-beta.1`. The version is also injected into the
+executable metadata; prerelease SemVer is supported.
 
 The script creates a framework-dependent publish by default. It does not create an installer, MSIX package, or signed build.
 
-To produce a distributable package (self-contained publish, bundled `LICENSE.md`
-and `PRIVACY.md`, versioned zip plus SHA256 checksum under `artifacts/`):
+To produce a distributable package (self-contained publish, bundled `LICENSE.md`,
+`PRIVACY.md`, and `release-manifest.json`, versioned zip plus verified SHA256
+checksum under `artifacts/`), start from a clean Git working tree and run:
 
 ```powershell
-scripts/package-release.ps1 -Version 0.5.0-beta.1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\package-release.ps1 -Version 0.5.0-beta.1
 ```
+
+Packaging verifies executable versions, required files, archive contents, and
+the checksum. Release SemVer numeric components are limited to `65534`, and the
+currently supported runtime is `win-x64`. Use `-AllowDirty` only as an explicit
+override for a supervised local validation, never for an official release.
 
 See [`DEPLOY.md`](DEPLOY.md) for the full release procedure.
 

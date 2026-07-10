@@ -9,7 +9,9 @@ Items marked **(manual)** need a human pass on a real machine before tagging.
 ## Build & Test
 
 - [x] `dotnet build SessionPad.sln -c Release -warnaserror` passes with no warnings.
-- [x] `dotnet test SessionPad.sln -c Release --no-build --verbosity normal` is green (72/72).
+- [x] `dotnet test SessionPad.sln -c Release --no-build --verbosity normal` is green (78/78).
+- [x] `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test-release-scripts.ps1`
+      passes (SemVer bounds, safe artifact paths, and runtime validation).
 - [x] CI green: latest `main` push and the v0.5 branch PR run both passed.
       Re-check CI for the final release commit after merge.
 
@@ -48,8 +50,9 @@ Items marked **(manual)** need a human pass on a real machine before tagging.
 ## Distribution (added for the paid beta)
 
 - [x] `LICENSE.md` (proprietary draft) and `PRIVACY.md` exist and ship inside the zip.
-- [x] `scripts/package-release.ps1` produces a self-contained zip + SHA256 checksum
-      (verified: exe, LICENSE, PRIVACY present in the archive).
+- [x] `scripts/package-release.ps1` produces and verifies a self-contained zip +
+      SHA256 checksum (exe, LICENSE, PRIVACY, and release manifest present; executable
+      versions and manifest Git commit/dirty state match the requested release inputs).
 - [ ] Sales/distribution channel chosen (Microsoft Store vs direct sale) — **user decision**.
 - [ ] License draft reviewed by a human (ideally a lawyer) before charging money.
 - [ ] Gap accepted or resolved: unsigned exe (SmartScreen warning) and no installer/MSIX.

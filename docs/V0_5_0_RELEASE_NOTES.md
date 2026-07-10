@@ -39,7 +39,7 @@ terms in the box).
 
 ## Tests
 
-72 unit tests total, including new coverage for path traversal rejection, hotkey
+78 unit tests total, including new coverage for path traversal rejection, hotkey
 registration fallback, window target policy, and the settings view-model.
 
 ## Known Limitations / Privacy
