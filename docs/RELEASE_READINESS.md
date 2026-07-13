@@ -3,13 +3,18 @@
 A short go/no-go checklist before tagging the v0.5 paid beta. Every box should be
 checked, or the gap explicitly accepted, before release.
 
-Checked boxes below were verified on 2026-07-02 on `feature/v0.5-beta-hardening`.
-Items marked **(manual)** need a human pass on a real machine before tagging.
+Existing checked boxes below were verified on 2026-07-02 on
+`feature/v0.5-beta-hardening`; automated build/test entries were reverified on
+2026-07-13. Items marked **(manual)** need a human pass on a real machine before
+tagging.
 
 ## Build & Test
 
 - [x] `dotnet build SessionPad.sln -c Release -warnaserror` passes with no warnings.
-- [x] `dotnet test SessionPad.sln -c Release --no-build --verbosity normal` is green (78/78).
+- [x] `dotnet test SessionPad.sln -c Release --no-build --verbosity normal` is green (107/107).
+- [x] Pure window-placement tests cover right/left priority, clamping, negative
+      monitor coordinates, oversized-pad fallback, missing-monitor fallback, and
+      invalid pad dimensions without HWND or desktop dependencies.
 - [x] `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test-release-scripts.ps1`
       passes (SemVer bounds, safe artifact paths, and runtime validation).
 - [x] CI green: latest `main` push and the v0.5 branch PR run both passed.
@@ -58,6 +63,10 @@ Items marked **(manual)** need a human pass on a real machine before tagging.
 - [ ] Gap accepted or resolved: unsigned exe (SmartScreen warning) and no installer/MSIX.
 
 ## Manual Smoke (per `docs/06_QA_CHECKLIST.md`)
+
+Record current Windows attachment/follow stability results in
+[`WINDOWS_STABILITY_QA.md`](WINDOWS_STABILITY_QA.md). Its 26 manual scenarios are
+not satisfied by the automated placement tests and are currently marked not run.
 
 - [ ] **(manual)** Attach to VS Code, Windows Terminal, and a browser.
 - [ ] **(manual)** Multi-monitor and 100% / 125% / 150% DPI sanity checks.

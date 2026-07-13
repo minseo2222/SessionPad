@@ -39,8 +39,9 @@ terms in the box).
 
 ## Tests
 
-78 unit tests total, including new coverage for path traversal rejection, hotkey
-registration fallback, window target policy, and the settings view-model.
+107 unit tests total, including deterministic coverage for window placement
+boundaries and attachment-result state invariants, plus path traversal rejection,
+hotkey registration fallback, window target policy, and the settings view-model.
 
 ## Known Limitations / Privacy
 
