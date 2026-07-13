@@ -45,6 +45,7 @@
         <Style x:Key="DeleteItemActionButtonStyle"
                TargetType="{x:Type Button}"
                BasedOn="{StaticResource ItemActionButtonStyle}">
+            <Setter Property="AutomationProperties.Name" Value="Delete" />
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="{DynamicResource Surface.Raised}" />
@@ -59,6 +60,24 @@
             <Setter Property="Width" Value="18" />
             <Setter Property="Height" Value="12" />
             <Setter Property="Opacity" Value="1" />
+        </Style>
+
+        <Style x:Key="EnterHintKeycapStyle"
+               TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="{DynamicResource Surface.Code}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Border.Hairline}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="5,1" />
+            <Setter Property="Margin" Value="8,0,6,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Opacity" Value="0" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource AncestorType=Grid}}"
+                             Value="True">
+                    <Setter Property="Opacity" Value="1" />
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
 
         <Style x:Key="EmptyStateTextStyle"
@@ -108,6 +127,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
@@ -130,20 +150,69 @@
                             Padding="0,2"
                             Cursor="SizeAll"
                             ToolTip="Drag near a window to attach"
+                            AutomationProperties.Name="Drag to attach to a window"
                             MouseLeftButtonDown="OnDragAttachMouseLeftButtonDown">
-                        <TextBlock Text="Drag"
+                        <TextBlock Text="⠿"
                                    FontSize="13"
                                    Foreground="{DynamicResource Text.Faint}"
                                    VerticalAlignment="Center" />
                     </Border>
 
-                    <TextBlock Grid.Column="1"
-                               Margin="10,0,0,0"
-                               Text="SESSIONPAD"
-                               FontSize="10.5"
-                               FontWeight="Medium"
-                               Foreground="{DynamicResource Text.Muted}"
-                               VerticalAlignment="Center" />
+                    <Grid Grid.Column="1"
+                          Grid.ColumnSpan="2"
+                          Margin="8,0,8,0"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Left">
+                        <Border x:Name="SessionIdentityFlash"
+                                Background="{DynamicResource Accent}"
+                                CornerRadius="5"
+                                Margin="-6,-2"
+                                Opacity="0" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="●"
+                                       FontSize="8"
+                                       VerticalAlignment="Center"
+                                       Margin="0,1,6,0"
+                                       Foreground="{DynamicResource Status.Success}"
+                                       ToolTip="Attached to the target window">
+                                <TextBlock.Style>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsAttachedToWindow}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                                <DataTrigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimationUsingKeyFrames Storyboard.Target="{Binding ElementName=SessionIdentityFlash}"
+                                                                                           Storyboard.TargetProperty="Opacity">
+                                                                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0" />
+                                                                <LinearDoubleKeyFrame KeyTime="0:0:0.12" Value="0.22" />
+                                                                <LinearDoubleKeyFrame KeyTime="0:0:0.45" Value="0" />
+                                                            </DoubleAnimationUsingKeyFrames>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.EnterActions>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding CurrentSessionDisplayName}"
+                                       ToolTip="{Binding CurrentSessionDisplayName}"
+                                       FontSize="12"
+                                       FontWeight="Medium"
+                                       Foreground="{DynamicResource Text.Primary}"
+                                       TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center" />
+                        </Grid>
+                    </Grid>
 
                     <TextBlock Grid.Column="3"
                                Text="●"
@@ -170,7 +239,8 @@
                             Height="25"
                             Padding="0"
                             Foreground="{DynamicResource Text.Faint}"
-                            ToolTip="Settings" />
+                            ToolTip="Settings"
+                            AutomationProperties.Name="Settings" />
                     <Button Grid.Column="5"
                             Command="{Binding CollapseCommand}"
                             Content="&#x2212;"
@@ -179,7 +249,8 @@
                             Padding="0"
                             Margin="5,0,0,0"
                             Foreground="{DynamicResource Text.Faint}"
-                            ToolTip="Collapse" />
+                            ToolTip="Collapse to tab"
+                            AutomationProperties.Name="Collapse to tab" />
                     <Button Grid.Column="6"
                             Click="OnCloseButtonClick"
                             Content="&#x2715;"
@@ -189,7 +260,8 @@
                             Margin="5,0,0,0"
                             FontSize="11"
                             Foreground="{DynamicResource Text.Faint}"
-                            ToolTip="Hide to tray" />
+                            ToolTip="Hide to tray"
+                            AutomationProperties.Name="Hide to tray" />
                 </Grid>
 
                 <Border Grid.Row="1"
@@ -374,7 +446,73 @@
                     </Grid>
                 </Border>
 
-                <Grid Grid.Row="2"
+                <Border Grid.Row="2"
+                        Margin="0,0,0,12"
+                        Background="{DynamicResource Surface.Raised}"
+                        BorderBrush="{DynamicResource Border.Hairline}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="12,10,8,10">
+                    <Border.Style>
+                        <Style TargetType="{x:Type Border}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsAttachHintVisible}" Value="True" />
+                                        <Condition Binding="{Binding IsSettingsOpen}" Value="False" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Attach this pad to the window you're working in"
+                                       FontSize="12.5"
+                                       FontWeight="Medium"
+                                       TextWrapping="Wrap" />
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="0,6,0,0">
+                                <Border Background="{DynamicResource Surface.Code}"
+                                        BorderBrush="{DynamicResource Border.Hairline}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Padding="6,1"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding AppliedHotkey.Display}"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource Text.Code}" />
+                                </Border>
+                                <TextBlock Text="while that window is focused"
+                                           FontSize="12"
+                                           Foreground="{DynamicResource Text.Muted}"
+                                           VerticalAlignment="Center"
+                                           Margin="7,0,0,0" />
+                            </StackPanel>
+                        </StackPanel>
+                        <Button Grid.Column="1"
+                                Command="{Binding DismissAttachHintCommand}"
+                                Content="&#x2715;"
+                                Width="22"
+                                Height="22"
+                                Padding="0"
+                                FontSize="10"
+                                VerticalAlignment="Top"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="{DynamicResource Text.Faint}"
+                                ToolTip="Hide this tip"
+                                AutomationProperties.Name="Hide attach tip" />
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="3"
                       Margin="0,0,0,12">
                     <Border Background="{DynamicResource Surface.Capture}"
                             BorderBrush="{DynamicResource Border.Hairline}"
@@ -402,6 +540,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Button Command="{Binding AddPinnedCommand}"
+                                    AutomationProperties.Name="Add key detail"
                                     Content="+"
                                     Width="24"
                                     Height="24"
@@ -414,6 +553,7 @@
                                     Margin="0,0,4,0" />
                             <TextBox Grid.Column="1"
                                      Text="{Binding NewPinnedText, UpdateSourceTrigger=PropertyChanged}"
+                                     AutomationProperties.Name="New key detail"
                                      Tag="Save a key detail…"
                                      MinHeight="36"
                                      Background="Transparent"
@@ -424,12 +564,12 @@
                                     <KeyBinding Key="Return" Command="{Binding AddPinnedCommand}" />
                                 </TextBox.InputBindings>
                             </TextBox>
-                            <TextBlock Grid.Column="2"
-                                       Text="↵"
-                                       FontSize="10"
-                                       Foreground="{DynamicResource Text.Faint}"
-                                       VerticalAlignment="Center"
-                                       Margin="8,0,6,0" />
+                            <Border Grid.Column="2"
+                                    Style="{StaticResource EnterHintKeycapStyle}">
+                                <TextBlock Text="↵"
+                                           FontSize="10"
+                                           Foreground="{DynamicResource Text.Muted}" />
+                            </Border>
                         </Grid>
                     </Border>
 
@@ -459,6 +599,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Button Command="{Binding AddTodoCommand}"
+                                    AutomationProperties.Name="Add to-do"
                                     Content="+"
                                     Width="24"
                                     Height="24"
@@ -471,6 +612,7 @@
                                     Margin="0,0,4,0" />
                             <TextBox Grid.Column="1"
                                      Text="{Binding NewTodoText, UpdateSourceTrigger=PropertyChanged}"
+                                     AutomationProperties.Name="New to-do"
                                      Tag="Capture a todo…"
                                      MinHeight="36"
                                      Background="Transparent"
@@ -481,12 +623,12 @@
                                     <KeyBinding Key="Return" Command="{Binding AddTodoCommand}" />
                                 </TextBox.InputBindings>
                             </TextBox>
-                            <TextBlock Grid.Column="2"
-                                       Text="↵"
-                                       FontSize="10"
-                                       Foreground="{DynamicResource Text.Faint}"
-                                       VerticalAlignment="Center"
-                                       Margin="8,0,6,0" />
+                            <Border Grid.Column="2"
+                                    Style="{StaticResource EnterHintKeycapStyle}">
+                                <TextBlock Text="↵"
+                                           FontSize="10"
+                                           Foreground="{DynamicResource Text.Muted}" />
+                            </Border>
                         </Grid>
                     </Border>
 
@@ -516,6 +658,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Button Command="{Binding AddCommandItemCommand}"
+                                    AutomationProperties.Name="Add command"
                                     Content="&gt;"
                                     Width="24"
                                     Height="24"
@@ -528,6 +671,7 @@
                                     Margin="0,0,4,0" />
                             <TextBox Grid.Column="1"
                                      Text="{Binding NewCommandText, UpdateSourceTrigger=PropertyChanged}"
+                                     AutomationProperties.Name="New command"
                                      Tag="Add a command…"
                                      MinHeight="36"
                                      Background="Transparent"
@@ -539,12 +683,12 @@
                                     <KeyBinding Key="Return" Command="{Binding AddCommandItemCommand}" />
                                 </TextBox.InputBindings>
                             </TextBox>
-                            <TextBlock Grid.Column="2"
-                                       Text="↵"
-                                       FontSize="10"
-                                       Foreground="{DynamicResource Text.Faint}"
-                                       VerticalAlignment="Center"
-                                       Margin="8,0,6,0" />
+                            <Border Grid.Column="2"
+                                    Style="{StaticResource EnterHintKeycapStyle}">
+                                <TextBlock Text="↵"
+                                           FontSize="10"
+                                           Foreground="{DynamicResource Text.Muted}" />
+                            </Border>
                         </Grid>
                     </Border>
 
@@ -574,6 +718,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Button Command="{Binding AddNoteCommand}"
+                                    AutomationProperties.Name="Add note"
                                     Content="+"
                                     Width="24"
                                     Height="24"
@@ -586,6 +731,7 @@
                                     Margin="0,0,4,0" />
                             <TextBox Grid.Column="1"
                                      Text="{Binding NewNoteText, UpdateSourceTrigger=PropertyChanged}"
+                                     AutomationProperties.Name="New note"
                                      Tag="Write a note…"
                                      MinHeight="36"
                                      Background="Transparent"
@@ -596,17 +742,17 @@
                                     <KeyBinding Key="Return" Command="{Binding AddNoteCommand}" />
                                 </TextBox.InputBindings>
                             </TextBox>
-                            <TextBlock Grid.Column="2"
-                                       Text="↵"
-                                       FontSize="10"
-                                       Foreground="{DynamicResource Text.Faint}"
-                                       VerticalAlignment="Center"
-                                       Margin="8,0,6,0" />
+                            <Border Grid.Column="2"
+                                    Style="{StaticResource EnterHintKeycapStyle}">
+                                <TextBlock Text="↵"
+                                           FontSize="10"
+                                           Foreground="{DynamicResource Text.Muted}" />
+                            </Border>
                         </Grid>
                     </Border>
                 </Grid>
 
-                <Grid Grid.Row="3">
+                <Grid Grid.Row="4">
                     <Grid>
                         <Grid.Style>
                             <Style TargetType="{x:Type Grid}">
@@ -620,7 +766,8 @@
                         </Grid.Style>
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <TextBlock Text="Search notes"
+                                <TextBlock x:Name="SearchNotesLabel"
+                                           Text="Search notes"
                                            FontWeight="Medium"
                                            Foreground="{DynamicResource Text.Primary}" />
                                 <Grid Margin="0,8,0,0">
@@ -630,6 +777,7 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBox Text="{Binding SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.LabeledBy="{Binding ElementName=SearchNotesLabel}"
                                              Tag="Search all sessions…"
                                              MinHeight="36"
                                              VerticalContentAlignment="Center">
@@ -651,7 +799,7 @@
                                             VerticalAlignment="Center" />
                                 </Grid>
                                 <TextBlock Margin="0,6,0,0"
-                                           Foreground="{DynamicResource Status}"
+                                           Foreground="{DynamicResource Text.Muted}"
                                            TextWrapping="Wrap"
                                            Text="{Binding SearchStatus, Mode=OneWay}" />
                                 <ItemsControl Margin="0,6,0,0"
@@ -700,6 +848,7 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBox Text="{Binding NewSessionName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="Rename this session"
                                              Tag="Rename this session…"
                                              MinHeight="36"
                                              VerticalContentAlignment="Center" />
@@ -714,14 +863,23 @@
                                           Content="Pin to this app (ignore window title)"
                                           IsChecked="{Binding IsCurrentSessionPinned, Mode=TwoWay}" />
 
-                                <TextBlock Margin="0,14,0,0"
-                                           Text="Sessions"
-                                           FontWeight="Medium"
-                                           Foreground="{DynamicResource Text.Primary}" />
-                                <TextBlock Margin="0,6,0,0"
+                                <Expander Margin="0,14,0,0"
+                                          Foreground="{DynamicResource Text.Primary}">
+                                    <Expander.Header>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Sessions"
+                                                       FontWeight="Medium"
+                                                       Foreground="{DynamicResource Text.Primary}" />
+                                            <TextBlock Text="{Binding Sessions.Count, StringFormat={}({0})}"
+                                                       Margin="6,0,0,0"
+                                                       Foreground="{DynamicResource Text.Muted}" />
+                                        </StackPanel>
+                                    </Expander.Header>
+                                    <StackPanel Margin="0,4,0,0">
+                                <TextBlock Margin="0,2,0,0"
                                            Foreground="{DynamicResource Text.Faint}"
                                            TextWrapping="Wrap"
-                                           Text="No saved sessions yet.">
+                                           Text="No saved sessions yet. Attach SessionPad to a window to start one.">
                                     <TextBlock.Style>
                                         <Style TargetType="{x:Type TextBlock}">
                                             <Setter Property="Visibility" Value="Collapsed" />
@@ -840,6 +998,8 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                 </ScrollViewer>
+                                    </StackPanel>
+                                </Expander>
 
                                 <TextBlock Margin="0,14,0,0"
                                            Text="Local Data"
@@ -852,7 +1012,7 @@
                                 <TextBlock Margin="0,6,0,0"
                                            Foreground="{DynamicResource Text.Faint}"
                                            TextWrapping="Wrap"
-                                           Text="SessionPad stores user-entered notes locally. It does not use cloud sync, login, telemetry, screen scraping, or terminal scraping." />
+                                           Text="Your notes are stored locally on this device only. No account, no cloud sync, no telemetry. SessionPad never reads your screen, terminal, or other apps." />
                                 <DockPanel Margin="0,8,0,0">
                                     <DockPanel.Style>
                                         <Style TargetType="{x:Type DockPanel}">
@@ -904,7 +1064,7 @@
                                     </StackPanel>
                                 </StackPanel>
                                 <TextBlock Margin="0,8,0,0"
-                                           Foreground="{DynamicResource Status}"
+                                           Foreground="{DynamicResource Text.Muted}"
                                            TextWrapping="Wrap"
                                            Text="{Binding LocalDataStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Local data ready, StringFormat={}Status: {0}}" />
 
@@ -912,7 +1072,7 @@
                                           Content="Start with Windows"
                                           IsChecked="{Binding StartOnLogin, Mode=TwoWay}" />
                                 <TextBlock Margin="0,6,0,0"
-                                           Foreground="{DynamicResource Status}"
+                                           Foreground="{DynamicResource Text.Muted}"
                                            TextWrapping="Wrap"
                                            Text="{Binding StartupStatus, Mode=OneWay, FallbackValue=Startup ready, StringFormat={}Startup: {0}}" />
                                 <CheckBox Margin="0,8,0,0"
@@ -926,7 +1086,8 @@
                                            TextWrapping="Wrap"
                                            Text="When on, SessionPad attaches to whichever window you focus and shows its note. Matching uses the window title only; nothing inside the window is read." />
 
-                                <TextBlock Margin="0,14,0,0"
+                                <TextBlock x:Name="AttachShortcutLabel"
+                                           Margin="0,14,0,0"
                                            Text="Attach shortcut"
                                            FontWeight="Medium"
                                            Foreground="{DynamicResource Text.Primary}" />
@@ -936,6 +1097,7 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <ComboBox ItemsSource="{Binding HotkeyOptions}"
+                                              AutomationProperties.LabeledBy="{Binding ElementName=AttachShortcutLabel}"
                                               SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}"
                                               DisplayMemberPath="Display"
                                               MinHeight="32"
@@ -948,9 +1110,19 @@
                                             VerticalAlignment="Center" />
                                 </Grid>
                                 <TextBlock Margin="0,6,0,0"
-                                           Foreground="{DynamicResource Status}"
                                            TextWrapping="Wrap"
-                                           Text="{Binding HotkeyStatus, Mode=OneWay}" />
+                                           Text="{Binding HotkeyStatus, Mode=OneWay}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Setter Property="Foreground" Value="{DynamicResource Text.Muted}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsHotkeyStatusWarning}" Value="True">
+                                                    <Setter Property="Foreground" Value="{DynamicResource Status}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
 
                                 <Expander Margin="0,12,0,0"
                                           Foreground="{DynamicResource Text.Primary}">
@@ -981,7 +1153,7 @@
                                         <TextBlock Foreground="{DynamicResource Text.Muted}"
                                                    TextWrapping="Wrap"
                                                    Text="{Binding CurrentSessionNoteFile, Mode=OneWay, TargetNullValue=(none), FallbackValue=Note file: (none), StringFormat={}Note file: {0}}" />
-                                        <TextBlock Foreground="{DynamicResource Status}"
+                                        <TextBlock Foreground="{DynamicResource Text.Muted}"
                                                    TextWrapping="Wrap"
                                                    Text="{Binding CurrentSessionStatus, Mode=OneWay, TargetNullValue=Ready, FallbackValue=Session status: Ready, StringFormat={}Session status: {0}}" />
 
@@ -1053,7 +1225,7 @@
                                 </Style.Triggers>
                             </Style>
                         </Grid.Style>
-                        <TextBlock Text="No key details yet. Add one above.">
+                        <TextBlock Text="No key details yet — pin something you always want in view for this window.">
                             <TextBlock.Style>
                                 <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource EmptyStateTextStyle}">
                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -1108,13 +1280,13 @@
                                                     <Button Style="{StaticResource ReorderButtonStyle}"
                                                             Command="{Binding DataContext.MoveItemUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
-                                                            ToolTip="Move up">
+                                                            ToolTip="Move up" AutomationProperties.Name="Move up">
                                                         <Path Width="10" Height="6" Data="M 1 5 L 5 1 L 9 5" Fill="Transparent" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.3" />
                                                     </Button>
                                                     <Button Style="{StaticResource ReorderButtonStyle}"
                                                             Command="{Binding DataContext.MoveItemDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
-                                                            ToolTip="Move down">
+                                                            ToolTip="Move down" AutomationProperties.Name="Move down">
                                                         <Path Width="10" Height="6" Data="M 1 1 L 5 5 L 9 1" Fill="Transparent" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.3" />
                                                     </Button>
                                                 </StackPanel>
@@ -1165,7 +1337,7 @@
                                 </Style.Triggers>
                             </Style>
                         </Grid.Style>
-                        <TextBlock Text="No todos yet. Add one above.">
+                        <TextBlock Text="No to-dos yet — add one above and check it off when it's done.">
                             <TextBlock.Style>
                                 <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource EmptyStateTextStyle}">
                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -1197,7 +1369,7 @@
                                                           Width="22"
                                                           Height="22"
                                                           VerticalAlignment="Center"
-                                                          ToolTip="Toggle todo">
+                                                          ToolTip="Toggle todo" AutomationProperties.Name="Toggle to-do done">
                                                     <CheckBox.Template>
                                                         <ControlTemplate TargetType="{x:Type CheckBox}">
                                                             <Grid Width="22"
@@ -1254,13 +1426,13 @@
                                                     <Button Style="{StaticResource ReorderButtonStyle}"
                                                             Command="{Binding DataContext.MoveItemUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
-                                                            ToolTip="Move up">
+                                                            ToolTip="Move up" AutomationProperties.Name="Move up">
                                                         <Path Width="10" Height="6" Data="M 1 5 L 5 1 L 9 5" Fill="Transparent" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.3" />
                                                     </Button>
                                                     <Button Style="{StaticResource ReorderButtonStyle}"
                                                             Command="{Binding DataContext.MoveItemDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
-                                                            ToolTip="Move down">
+                                                            ToolTip="Move down" AutomationProperties.Name="Move down">
                                                         <Path Width="10" Height="6" Data="M 1 1 L 5 5 L 9 1" Fill="Transparent" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.3" />
                                                     </Button>
                                                 </StackPanel>
@@ -1311,7 +1483,7 @@
                                 </Style.Triggers>
                             </Style>
                         </Grid.Style>
-                        <TextBlock Text="No commands yet. Add one above.">
+                        <TextBlock Text="No commands yet — save one and copy it with a single click.">
                             <TextBlock.Style>
                                 <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource EmptyStateTextStyle}">
                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -1361,7 +1533,7 @@
                                                             Style="{StaticResource ItemActionButtonStyle}"
                                                             Command="{Binding DataContext.CopyCommandItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
-                                                            ToolTip="Copy">
+                                                            ToolTip="Copy" AutomationProperties.Name="Copy command">
                                                         <Grid Width="14"
                                                               Height="14">
                                                             <Rectangle Width="9"
@@ -1392,13 +1564,13 @@
                                                         <Button Style="{StaticResource ReorderButtonStyle}"
                                                                 Command="{Binding DataContext.MoveItemUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                 CommandParameter="{Binding}"
-                                                                ToolTip="Move up">
+                                                                ToolTip="Move up" AutomationProperties.Name="Move up">
                                                             <Path Width="10" Height="6" Data="M 1 5 L 5 1 L 9 5" Fill="Transparent" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.3" />
                                                         </Button>
                                                         <Button Style="{StaticResource ReorderButtonStyle}"
                                                                 Command="{Binding DataContext.MoveItemDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                 CommandParameter="{Binding}"
-                                                                ToolTip="Move down">
+                                                                ToolTip="Move down" AutomationProperties.Name="Move down">
                                                             <Path Width="10" Height="6" Data="M 1 1 L 5 5 L 9 1" Fill="Transparent" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.3" />
                                                         </Button>
                                                     </StackPanel>
@@ -1452,7 +1624,7 @@
                                 </Style.Triggers>
                             </Style>
                         </Grid.Style>
-                        <TextBlock Text="No notes yet. Add one above.">
+                        <TextBlock Text="No notes yet — jot anything here; it stays on this device.">
                             <TextBlock.Style>
                                 <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource EmptyStateTextStyle}">
                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -1511,13 +1683,13 @@
                                                         <Button Style="{StaticResource ReorderButtonStyle}"
                                                                 Command="{Binding DataContext.MoveItemUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                 CommandParameter="{Binding}"
-                                                                ToolTip="Move up">
+                                                                ToolTip="Move up" AutomationProperties.Name="Move up">
                                                             <Path Width="10" Height="6" Data="M 1 5 L 5 1 L 9 5" Fill="Transparent" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.3" />
                                                         </Button>
                                                         <Button Style="{StaticResource ReorderButtonStyle}"
                                                                 Command="{Binding DataContext.MoveItemDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                 CommandParameter="{Binding}"
-                                                                ToolTip="Move down">
+                                                                ToolTip="Move down" AutomationProperties.Name="Move down">
                                                             <Path Width="10" Height="6" Data="M 1 1 L 5 5 L 9 1" Fill="Transparent" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.3" />
                                                         </Button>
                                                     </StackPanel>
@@ -1530,7 +1702,7 @@
                                                             Background="Transparent"
                                                             BorderThickness="0"
                                                             Foreground="{DynamicResource Text.Faint}"
-                                                            ToolTip="Expand note"
+                                                            ToolTip="Expand note" AutomationProperties.Name="Expand note"
                                                             VerticalAlignment="Top">
                                                         <Path x:Name="NoteExpandChevron"
                                                               Width="11"
@@ -1633,7 +1805,7 @@
                     </Grid>
                 </Grid>
 
-                <Border Grid.Row="4"
+                <Border Grid.Row="5"
                         Margin="0,9,0,0"
                         Padding="0,9,0,0"
                         BorderBrush="{DynamicResource Border.Hairline}"

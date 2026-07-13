@@ -1,0 +1,29 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# C# and XAML
+[*.{cs,xaml}]
+indent_size = 4
+
+# Project and MSBuild files
+[*.{csproj,props,targets}]
+indent_size = 2
+
+# Data / config
+[*.{json,xml,config}]
+indent_size = 2
+
+# Markdown: trailing whitespace can be a hard line break
+[*.{md,markdown}]
+trim_trailing_whitespace = false
+
+# Unix shell scripts stay LF
+[*.sh]
+end_of_line = lf

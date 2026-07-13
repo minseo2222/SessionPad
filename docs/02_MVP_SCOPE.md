@@ -16,6 +16,10 @@ The full MVP should later support:
 
 ## Slice 1 Goal
 
+> Historical: Slice 1 is complete. Persistence, hotkeys, and Win32 tracking — listed
+> below as "must not include" — have since shipped and are core features. This section
+> is kept as a record of the original scaffold scope, not as an active constraint.
+
 Slice 1 is only the app scaffold and UI placeholder.
 
 Slice 1 must produce:
@@ -93,20 +97,22 @@ Example content:
 ```text
 SP
 3
+```
 
 Where 3 may later mean open TODO count.
 
-Compact Note
+### Compact Note
 
 A small expanded note panel.
 
 Sections:
 
-Pinned
-Todo
-Commands
-Notes
-Design Tone
+- Pinned
+- Todo
+- Commands
+- Notes
+
+## Design Tone
 
 The UI should be simple, utility-like, and unobtrusive.
 

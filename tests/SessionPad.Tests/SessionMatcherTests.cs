@@ -26,6 +26,34 @@ public class SessionMatcherTests
         Assert.Equal(expected, session.Identity.NormalizedWindowTitle);
     }
 
+    [Theory]
+    [InlineData("⠋ shortfactory")]
+    [InlineData("⠧ shortfactory")]
+    public void Spinner_glyphs_are_stripped_from_titles(string title)
+    {
+        using var dir = new TempDir();
+        var (matcher, _) = Create(dir.Path);
+
+        var session = matcher.FindOrCreateSession(Win.Make("WindowsTerminal", title));
+
+        Assert.Equal("shortfactory", session.Identity.NormalizedWindowTitle);
+        Assert.Equal("shortfactory", session.DisplayName);
+    }
+
+    [Fact]
+    public void Spinner_frames_resolve_to_the_same_session()
+    {
+        using var dir = new TempDir();
+        var (matcher, _) = Create(dir.Path);
+
+        var frameA = matcher.FindOrCreateSession(Win.Make("WindowsTerminal", "⠋ shortfactory"));
+        var frameB = matcher.FindOrCreateSession(Win.Make("WindowsTerminal", "⠙ shortfactory"));
+        var plain = matcher.FindOrCreateSession(Win.Make("WindowsTerminal", "shortfactory"));
+
+        Assert.Equal(frameA.SessionId, frameB.SessionId);
+        Assert.Equal(frameA.SessionId, plain.SessionId);
+    }
+
     [Fact]
     public void MatchKey_uses_lower_process_pipe_title()
     {

@@ -95,4 +95,54 @@ public class SessionListViewModelTests
 
         Assert.Equal("default", vm.CurrentSessionId);
     }
+
+    [Fact]
+    public void Collapse_and_expand_persist_panel_state()
+    {
+        using var dir = new TempDir();
+        var store = new NoteStorageService(dir.Path, new FakeClock(DateTimeOffset.UnixEpoch, TimeSpan.FromSeconds(1)));
+        var vm = new FloatingNoteViewModel(store, new LocalDataService(), new ClipboardService());
+
+        vm.CollapseCommand.Execute(null);
+
+        var afterCollapse = store.LoadDefaultNote();
+        Assert.NotNull(afterCollapse);
+        Assert.Equal(NotePanelState.DockedTab, afterCollapse!.PanelState);
+
+        vm.ExpandCommand.Execute(null);
+
+        Assert.Equal(NotePanelState.CompactNote, vm.PanelState);
+        var afterExpand = store.LoadDefaultNote();
+        Assert.NotNull(afterExpand);
+        Assert.Equal(NotePanelState.CompactNote, afterExpand!.PanelState);
+    }
+
+    [Fact]
+    public void Fresh_default_note_is_usable_and_has_no_dev_or_slice_text()
+    {
+        using var dir = new TempDir();
+        // A fresh, empty data directory: no saved default note, so the view model
+        // populates the built-in first-run default content.
+        var store = new NoteStorageService(dir.Path, new FakeClock(DateTimeOffset.UnixEpoch, TimeSpan.FromSeconds(1)));
+        var vm = new FloatingNoteViewModel(store, new LocalDataService(), new ClipboardService());
+
+        // Fresh launch still creates a usable default note (every section seeded).
+        Assert.NotEmpty(vm.PinnedItems);
+        Assert.NotEmpty(vm.TodoItems);
+        Assert.NotEmpty(vm.CommandItems);
+        Assert.NotEmpty(vm.NoteItems);
+
+        var defaultText = vm.PinnedItems.Select(i => i.Text)
+            .Concat(vm.TodoItems.Select(i => i.Text))
+            .Concat(vm.CommandItems.Select(i => i.Text))
+            .Concat(vm.NoteItems.Select(i => i.Text));
+
+        foreach (var text in defaultText)
+        {
+            var lower = text.ToLowerInvariant();
+            Assert.False(lower.Contains("slice"), $"default content must not mention 'Slice': '{text}'");
+            Assert.False(lower.Contains("mvp slice"), $"default content must not mention 'MVP slice': '{text}'");
+            Assert.False(lower.Contains("dotnet build"), $"default content must not mention 'dotnet build': '{text}'");
+        }
+    }
 }

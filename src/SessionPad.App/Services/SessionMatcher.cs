@@ -7,6 +7,10 @@ public sealed class SessionMatcher
 {
     private static readonly Regex WhitespacePattern = new(@"\s+", RegexOptions.Compiled);
 
+    // Terminal progress spinners cycle through braille glyphs (U+2800–U+28FF) in the
+    // window title; without stripping them every frame becomes a distinct session.
+    private static readonly Regex SpinnerGlyphPattern = new(@"[⠀-⣿]", RegexOptions.Compiled);
+
     private static readonly HashSet<string> IdeProcessNames = new(StringComparer.Ordinal)
     {
         "code",
@@ -235,7 +239,7 @@ public sealed class SessionMatcher
     private static WindowIdentity CreateIdentity(DetectedWindowInfo window)
     {
         var processName = NormalizeProcessName(window.ProcessName);
-        var originalTitle = CollapseWhitespace(window.Title);
+        var originalTitle = CollapseWhitespace(SpinnerGlyphPattern.Replace(window.Title ?? string.Empty, string.Empty));
         var isIdeProcess = IsIdeProcess(processName);
         var normalizedTitle = isIdeProcess
             ? ExtractIdeProjectKey(originalTitle)

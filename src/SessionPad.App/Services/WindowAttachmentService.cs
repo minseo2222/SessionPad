@@ -308,51 +308,31 @@ public sealed class WindowAttachmentService
         out string side,
         out string? error)
     {
-        side = "Right";
         error = null;
 
-        var x = targetBounds.Right + Gap;
-        var y = targetBounds.Top;
-
+        WindowBounds? workAreaBounds = null;
         if (TryGetWorkArea(targetHwnd, out var workArea))
         {
-            var rightX = targetBounds.Right + Gap;
-            var leftX = targetBounds.Left - Gap - sessionWidth;
-            var rightSpace = workArea.Right - rightX;
-            var leftSpace = targetBounds.Left - Gap - workArea.Left;
-
-            if (rightSpace >= sessionWidth)
-            {
-                x = rightX;
-                side = "Right";
-            }
-            else if (leftX >= workArea.Left)
-            {
-                x = leftX;
-                side = "Left";
-            }
-            else
-            {
-                if (rightSpace >= leftSpace)
-                {
-                    x = Clamp(rightX, workArea.Left, workArea.Right - sessionWidth);
-                    side = "Clamped Right";
-                }
-                else
-                {
-                    x = Clamp(leftX, workArea.Left, workArea.Right - sessionWidth);
-                    side = "Clamped Left";
-                }
-            }
-
-            y = Clamp(targetBounds.Top, workArea.Top, workArea.Bottom - sessionHeight);
+            workAreaBounds = new WindowBounds(
+                workArea.Left,
+                workArea.Top,
+                workArea.Right,
+                workArea.Bottom);
         }
+
+        var placement = WindowPlacementCalculator.Calculate(
+            targetBounds,
+            sessionWidth,
+            sessionHeight,
+            workAreaBounds,
+            Gap);
+        side = placement.Side;
 
         if (User32.SetWindowPos(
                 sessionPadHwnd,
                 IntPtr.Zero,
-                x,
-                y,
+                placement.X,
+                placement.Y,
                 0,
                 0,
                 User32.SwpNoSize | User32.SwpNoZOrder | User32.SwpNoActivate))
@@ -388,16 +368,6 @@ public sealed class WindowAttachmentService
         return true;
     }
 
-    private static int Clamp(int value, int min, int max)
-    {
-        if (max < min)
-        {
-            return min;
-        }
-
-        return Math.Min(Math.Max(value, min), max);
-    }
-
     private void ClearAttachedTarget()
     {
         _attachedTargetHwnd = IntPtr.Zero;
@@ -405,12 +375,5 @@ public sealed class WindowAttachmentService
         _lastSessionWidth = 0;
         _lastSessionHeight = 0;
         _attachSide = "Right";
-    }
-
-    private readonly record struct WindowBounds(int Left, int Top, int Right, int Bottom)
-    {
-        public int Width => Right - Left;
-
-        public int Height => Bottom - Top;
     }
 }

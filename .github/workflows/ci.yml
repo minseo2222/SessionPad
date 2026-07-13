@@ -21,3 +21,11 @@ jobs:
 
       - name: Test (Release)
         run: dotnet test SessionPad.sln -c Release --no-build --verbosity normal
+
+      - name: Test release scripts
+        shell: pwsh
+        run: scripts/test-release-scripts.ps1
+
+      - name: Smoke-test release packaging
+        shell: pwsh
+        run: scripts/package-release.ps1 -Version 0.5.0-beta.99-ci -FrameworkDependent

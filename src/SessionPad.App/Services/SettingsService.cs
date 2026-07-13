@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace SessionPad.App.Services;
 
-public sealed class SettingsService
+public sealed class SettingsService : ISettingsService
 {
     private const string AppDirectoryName = "SessionPad";
     private const string SettingsFileName = "settings.json";
@@ -53,6 +53,16 @@ public sealed class SettingsService
     public void SaveHotkey(string token)
     {
         Save(Load() with { Hotkey = string.IsNullOrWhiteSpace(token) ? DefaultHotkey : token });
+    }
+
+    public bool LoadAttachHintDismissed()
+    {
+        return Load().AttachHintDismissed;
+    }
+
+    public void SaveAttachHintDismissed(bool value)
+    {
+        Save(Load() with { AttachHintDismissed = value });
     }
 
     private AppSettings Load()
@@ -129,5 +139,6 @@ public sealed class SettingsService
     private sealed record AppSettings(
         string Theme,
         bool AutoTrackForeground = false,
-        string Hotkey = DefaultHotkey);
+        string Hotkey = DefaultHotkey,
+        bool AttachHintDismissed = false);
 }

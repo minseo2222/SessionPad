@@ -140,4 +140,59 @@ public class CompatibilityTests
         Assert.Equal("must survive", loaded!.Sections.Notes.Single().Text);
         Assert.Equal(NotePanelState.CompactNote, loaded.PanelState);
     }
+
+    [Fact]
+    public void LoadAllNotes_skips_a_session_whose_note_file_escapes_app_data()
+    {
+        using var dir = new TempDir();
+        var store = Store(dir.Path);
+        WriteNoteFile(dir.Path, "good", """
+        { "sessionId": "good",
+          "sections": { "pinned": [], "todo": [], "commands": [],
+            "notes": [ { "id": "n1", "text": "keep" } ] } }
+        """);
+        var index = new SessionIndex();
+        index.Sessions.Add(Session("good"));
+        index.Sessions.Add(new SessionSummary { SessionId = "evil", NoteFile = "../outside.json" });
+        store.SaveSessionIndex(index);
+
+        var all = store.LoadAllNotes();
+
+        Assert.Contains(all, n => n.Session?.SessionId == "good");
+        Assert.DoesNotContain(all, n => n.Session?.SessionId == "evil");
+    }
+
+    [Fact]
+    public void LoadAllNotes_does_not_crash_on_a_nested_traversal_entry()
+    {
+        using var dir = new TempDir();
+        var store = Store(dir.Path);
+        var index = new SessionIndex();
+        index.Sessions.Add(new SessionSummary { SessionId = "evil", NoteFile = "notes/../../outside.json" });
+        store.SaveSessionIndex(index);
+
+        var all = store.LoadAllNotes(); // must not throw
+
+        Assert.Empty(all);
+    }
+
+    [Fact]
+    public void A_valid_session_still_loads_when_another_index_entry_is_malicious()
+    {
+        using var dir = new TempDir();
+        var store = Store(dir.Path);
+        store.SaveSessionNote(Session("good"), new SessionNote
+        {
+            SessionId = "good",
+            Sections = new NoteSections { Notes = [new NoteTextItem { Id = "n1", Text = "hi" }] }
+        });
+        var index = new SessionIndex();
+        index.Sessions.Add(new SessionSummary { SessionId = "evil", NoteFile = "../../evil.json" });
+        index.Sessions.Add(Session("good"));
+        store.SaveSessionIndex(index);
+
+        var loaded = store.LoadAllNotes().Single(n => n.Session?.SessionId == "good");
+
+        Assert.Equal("hi", loaded.Note.Sections.Notes.Single().Text);
+    }
 }

@@ -1,0 +1,35 @@
+# Normalize line endings.
+# Text files are stored as LF in the repository and converted to the platform's
+# native ending on checkout. This keeps diffs clean across Windows and CI.
+* text=auto
+
+# Source and project files (normalized to LF in the repo).
+*.cs      text
+*.xaml    text
+*.csproj  text
+*.props   text
+*.targets text
+*.json    text
+*.xml     text
+*.config  text
+*.md      text
+
+# Windows-oriented files that tooling expects with CRLF on checkout.
+*.sln     text eol=crlf
+*.ps1     text eol=crlf
+*.cmd     text eol=crlf
+*.bat     text eol=crlf
+
+# Unix shell scripts must stay LF.
+*.sh      text eol=lf
+
+# Binary assets — never normalize or treat as text.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.dll  binary
+*.exe  binary
+*.pdb  binary
+*.snk  binary

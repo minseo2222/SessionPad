@@ -8,26 +8,6 @@ namespace SessionPad.App.Services;
 
 public sealed class WindowDetectionService
 {
-    private static readonly HashSet<string> RejectedDragAttachClasses = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Progman",
-        "WorkerW",
-        "Shell_TrayWnd",
-        "Shell_SecondaryTrayWnd",
-        "Button",
-        "NotifyIconOverflowWindow",
-        "DV2ControlHost",
-        "SysShadow",
-        "tooltips_class32",
-        "#32768"
-    };
-
-    private static readonly HashSet<string> AllowedExplorerWindowClasses = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "CabinetWClass",
-        "ExploreWClass"
-    };
-
     public DetectedWindowInfo GetForegroundWindowInfo(IntPtr sessionPadHwnd)
     {
         try
@@ -151,19 +131,7 @@ public sealed class WindowDetectionService
                         return true;
                     }
 
-                    var windowInfo = candidate.ToDetectedWindowInfo(sessionPadHwnd);
-                    if (!IsUsableExternalTarget(windowInfo, out rejectionReason))
-                    {
-                        if (!string.IsNullOrWhiteSpace(rejectionReason))
-                        {
-                            lastRejectedReason = rejectionReason;
-                            Debug.WriteLine(rejectionReason);
-                        }
-
-                        return true;
-                    }
-
-                    nearestTarget = windowInfo;
+                    nearestTarget = candidate.ToDetectedWindowInfo(sessionPadHwnd);
                     nearestDistance = distance;
                     nearestHasTitle = candidateHasTitle;
                 }
@@ -209,28 +177,44 @@ public sealed class WindowDetectionService
         candidate = default;
         rejectionReason = null;
 
+        // Win32 precondition that the shared policy cannot express from data alone.
+        if (hwnd == IntPtr.Zero || !User32.IsWindow(hwnd))
+        {
+            rejectionReason = "Drag attach skipped: invalid window.";
+            return false;
+        }
+
         var processId = GetProcessId(hwnd, out _);
         var processName = GetProcessName(processId, out _);
         var title = GetWindowTitle(hwnd, out _);
         var windowClass = GetWindowClass(hwnd, out _) ?? string.Empty;
         var bounds = GetBounds(hwnd, out _);
-        var isWindow = hwnd != IntPtr.Zero && User32.IsWindow(hwnd);
-        var isVisible = hwnd != IntPtr.Zero && User32.IsWindowVisible(hwnd);
-        var isMinimized = hwnd != IntPtr.Zero && User32.IsIconic(hwnd);
 
-        if (ShouldRejectAttachCandidate(
-                hwnd,
-                sessionPadHwnd,
-                processName,
-                processId,
-                title,
-                windowClass,
-                bounds,
-                isWindow,
-                isVisible,
-                isMinimized,
-                out rejectionReason))
+        var info = new DetectedWindowInfo
         {
+            Hwnd = hwnd,
+            HwndHex = FormatHwnd(hwnd),
+            ProcessName = processName,
+            Title = title,
+            ProcessId = processId,
+            Left = bounds.Left,
+            Top = bounds.Top,
+            Right = bounds.Right,
+            Bottom = bounds.Bottom,
+            IsMinimized = User32.IsIconic(hwnd),
+            IsVisible = User32.IsWindowVisible(hwnd),
+            IsSessionPadWindow = hwnd == sessionPadHwnd
+                || processId == Environment.ProcessId
+                || IsProcessName(processName, "SessionPad.App"),
+            WindowClass = windowClass
+        };
+
+        // Only read monitor geometry when the titleless full-screen rule could apply.
+        var monitor = string.IsNullOrWhiteSpace(title) ? TryGetMonitorBounds(hwnd) : null;
+        var decision = WindowTargetPolicy.Evaluate(info, monitor);
+        if (!decision.IsValid)
+        {
+            rejectionReason = $"Drag attach skipped: {decision.Reason}.";
             return false;
         }
 
@@ -245,123 +229,31 @@ public sealed class WindowDetectionService
         return true;
     }
 
-    private static bool ShouldRejectAttachCandidate(
-        IntPtr hwnd,
-        IntPtr sessionPadHwnd,
-        string processName,
-        int processId,
-        string title,
-        string windowClass,
-        NativeRect bounds,
-        bool isWindow,
-        bool isVisible,
-        bool isMinimized,
-        out string reason)
+    private static MonitorBounds? TryGetMonitorBounds(IntPtr hwnd)
     {
-        reason = string.Empty;
-
-        if (hwnd == IntPtr.Zero)
+        var monitor = User32.MonitorFromWindow(hwnd, User32.MonitorDefaultToNearest);
+        if (monitor == IntPtr.Zero)
         {
-            reason = "Drag attach skipped: empty window handle.";
-            return true;
+            return null;
         }
 
-        if (hwnd == sessionPadHwnd)
+        var monitorInfo = new MonitorInfo
         {
-            reason = "Drag attach skipped: SessionPad window.";
-            return true;
+            Size = Marshal.SizeOf<MonitorInfo>()
+        };
+
+        if (!User32.GetMonitorInfoW(monitor, ref monitorInfo))
+        {
+            return null;
         }
 
-        if (processId == Environment.ProcessId || IsProcessName(processName, "SessionPad.App"))
-        {
-            reason = "Drag attach skipped: SessionPad-owned window.";
-            return true;
-        }
-
-        if (!isWindow)
-        {
-            reason = "Drag attach skipped: invalid window.";
-            return true;
-        }
-
-        if (!isVisible)
-        {
-            reason = "Drag attach skipped: invisible window.";
-            return true;
-        }
-
-        if (isMinimized)
-        {
-            reason = "Drag attach skipped: minimized window.";
-            return true;
-        }
-
-        if (!HasUsableBounds(bounds))
-        {
-            reason = "Drag attach skipped: unusable window bounds.";
-            return true;
-        }
-
-        if (IsRejectedShellClass(windowClass))
-        {
-            reason = $"Drag attach skipped: shell/system window class {windowClass}.";
-            return true;
-        }
-
-        if (IsExplorerShellOrAmbiguousWindow(processName, title, windowClass))
-        {
-            reason = string.IsNullOrWhiteSpace(windowClass)
-                ? "Drag attach skipped: ambiguous explorer shell window."
-                : $"Drag attach skipped: explorer shell window {windowClass}.";
-            return true;
-        }
-
-        if (string.IsNullOrWhiteSpace(title) && IsFullMonitorOrWorkAreaWindow(hwnd, bounds))
-        {
-            reason = "Drag attach skipped: titleless full-screen background window.";
-            return true;
-        }
-
-        reason = string.Empty;
-        return false;
+        return new MonitorBounds(
+            ToScreenBounds(monitorInfo.Monitor),
+            ToScreenBounds(monitorInfo.WorkArea));
     }
 
-    private static bool IsUsableExternalTarget(DetectedWindowInfo window, out string? rejectionReason)
-    {
-        rejectionReason = null;
-
-        if (window.Hwnd == IntPtr.Zero)
-        {
-            rejectionReason = "Drag attach skipped: empty window handle.";
-            return false;
-        }
-
-        if (window.IsCurrentProcessWindow || IsProcessName(window.ProcessName, "SessionPad.App"))
-        {
-            rejectionReason = "Drag attach skipped: SessionPad-owned window.";
-            return false;
-        }
-
-        if (!window.IsVisible)
-        {
-            rejectionReason = "Drag attach skipped: invisible window.";
-            return false;
-        }
-
-        if (window.IsMinimized)
-        {
-            rejectionReason = "Drag attach skipped: minimized window.";
-            return false;
-        }
-
-        if (window.Width <= 0 || window.Height <= 0)
-        {
-            rejectionReason = "Drag attach skipped: unusable window bounds.";
-            return false;
-        }
-
-        return true;
-    }
+    private static ScreenBounds ToScreenBounds(NativeRect rect) =>
+        new(rect.Left, rect.Top, rect.Right, rect.Bottom);
 
     private static bool IsCurrentProcessWindow(IntPtr hwnd)
     {
@@ -397,64 +289,6 @@ public sealed class WindowDetectionService
         }
 
         return Math.Sqrt(((double)horizontalGap * horizontalGap) + ((double)verticalGap * verticalGap));
-    }
-
-    private static bool HasUsableBounds(NativeRect bounds)
-    {
-        return bounds.Right > bounds.Left && bounds.Bottom > bounds.Top;
-    }
-
-    private static bool IsRejectedShellClass(string? windowClass)
-    {
-        return !string.IsNullOrWhiteSpace(windowClass)
-            && RejectedDragAttachClasses.Contains(windowClass);
-    }
-
-    private static bool IsExplorerShellOrAmbiguousWindow(
-        string processName,
-        string title,
-        string? windowClass)
-    {
-        if (!IsProcessName(processName, "explorer"))
-        {
-            return false;
-        }
-
-        return string.IsNullOrWhiteSpace(title)
-            || string.IsNullOrWhiteSpace(windowClass)
-            || !AllowedExplorerWindowClasses.Contains(windowClass);
-    }
-
-    private static bool IsFullMonitorOrWorkAreaWindow(IntPtr hwnd, NativeRect bounds)
-    {
-        var monitor = User32.MonitorFromWindow(hwnd, User32.MonitorDefaultToNearest);
-        if (monitor == IntPtr.Zero)
-        {
-            return false;
-        }
-
-        var monitorInfo = new MonitorInfo
-        {
-            Size = Marshal.SizeOf<MonitorInfo>()
-        };
-
-        if (!User32.GetMonitorInfoW(monitor, ref monitorInfo))
-        {
-            return false;
-        }
-
-        return ContainsWithTolerance(bounds, monitorInfo.Monitor)
-            || ContainsWithTolerance(bounds, monitorInfo.WorkArea);
-    }
-
-    private static bool ContainsWithTolerance(NativeRect outer, NativeRect inner)
-    {
-        const int tolerance = 8;
-
-        return outer.Left <= inner.Left + tolerance
-            && outer.Top <= inner.Top + tolerance
-            && outer.Right >= inner.Right - tolerance
-            && outer.Bottom >= inner.Bottom - tolerance;
     }
 
     private static bool IsProcessName(string processName, string expected)

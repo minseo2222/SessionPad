@@ -55,82 +55,91 @@ src/
       User32.cs
       DwmApi.cs
       NativeTypes.cs
+```
 
 For Slice 1, only create the pieces required for a runnable UI.
 
 Do not create empty services unless they are immediately useful.
 
-Future Runtime Components
-WindowDetectionService
+## Future Runtime Components
+
+### WindowDetectionService
 
 Later responsibility:
 
-Read foreground window
-Read window title
-Read process name
-Read window bounds
-Ignore SessionPad’s own windows
+- Read foreground window
+- Read window title
+- Read process name
+- Read window bounds
+- Ignore SessionPad’s own windows
 
 Planned Win32 APIs:
 
-GetForegroundWindow
-GetWindowTextW
-GetWindowThreadProcessId
-GetWindowRect
-IsIconic
-WindowAttachmentService
+- GetForegroundWindow
+- GetWindowTextW
+- GetWindowThreadProcessId
+- GetWindowRect
+- IsIconic
+
+### WindowAttachmentService
 
 Later responsibility:
 
-Attach SessionPad note to a target HWND
-Position note beside target bounds
-Hide/show note based on target state
-Reposition note when target moves
-WinEventHookService
+- Attach SessionPad note to a target HWND
+- Position note beside target bounds
+- Hide/show note based on target state
+- Reposition note when target moves
+
+### WinEventHookService
 
 Later responsibility:
 
-Listen to foreground change
-Listen to move/resize
-Listen to minimize/restore
-Listen to window destroy/name change
+- Listen to foreground change
+- Listen to move/resize
+- Listen to minimize/restore
+- Listen to window destroy/name change
 
 Planned Win32 API:
 
-SetWinEventHook
-HotkeyService
+- SetWinEventHook
+
+### HotkeyService
 
 Later responsibility:
 
-Register global attach hotkey
-Receive WM_HOTKEY
-Handle hotkey conflicts
+- Register global attach hotkey
+- Receive WM_HOTKEY
+- Handle hotkey conflicts
 
 Planned Win32 API:
 
-RegisterHotKey
-UnregisterHotKey
-NoteStorageService
+- RegisterHotKey
+- UnregisterHotKey
+
+### NoteStorageService
 
 Later responsibility:
 
-Store notes under local app data
-Use JSON
-Atomic file writes
-Basic backup
+- Store notes under local app data
+- Use JSON
+- Atomic file writes
+- Basic backup
 
 Planned path:
 
+```text
 %APPDATA%/SessionPad/
   settings.json
   sessions.index.json
   notes/
   backups/
-Window Identity Strategy
+```
+
+## Window Identity Strategy
 
 MVP matching should use:
 
-processName + normalizedWindowTitle
+- processName + normalizedWindowTitle
 
 Do not persist HWND.
 
@@ -138,38 +147,39 @@ HWND is runtime-only and may change when apps restart.
 
 Potential fields:
 
-processName
-windowTitle
-normalizedWindowTitle
-windowClass
-executablePathHash
-userDefinedSessionName
-recentTitleSamples
-UI State Strategy
+- processName
+- windowTitle
+- normalizedWindowTitle
+- windowClass
+- executablePathHash
+- userDefinedSessionName
+- recentTitleSamples
+
+## UI State Strategy
 
 The note has these states:
 
-DockedTab
-CompactNote
-ExpandedNote
+- DockedTab
+- CompactNote
+- ExpandedNote
 
 For MVP, implement:
 
-DockedTab
-CompactNote
+- DockedTab
+- CompactNote
 
 ExpandedNote is later.
 
-Privacy and Security
+## Privacy and Security
 
 Do not implement:
 
-Screen capture
-OCR
-Terminal scraping
-Editor text scraping
-Reading project files automatically
-Cloud upload
-Telemetry
+- Screen capture
+- OCR
+- Terminal scraping
+- Editor text scraping
+- Reading project files automatically
+- Cloud upload
+- Telemetry
 
 Any future feature that reads external app state must be explicit, local-first, and documented.

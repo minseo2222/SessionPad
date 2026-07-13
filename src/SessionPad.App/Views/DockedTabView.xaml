@@ -4,53 +4,79 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
-             d:DesignHeight="116"
-             d:DesignWidth="84">
-    <Border Width="84"
-            Height="116"
-            Padding="8"
+             d:DesignHeight="40"
+             d:DesignWidth="200">
+    <Border Height="40"
+            MaxWidth="230"
+            Padding="6,0,12,0"
             Background="{DynamicResource Surface.Raised}"
             BorderBrush="{DynamicResource Border.Hairline}"
             BorderThickness="1"
-            CornerRadius="8"
+            CornerRadius="20"
+            AutomationProperties.Name="SessionPad docked tab. Drag to move."
             MouseLeftButtonDown="OnTabMoveMouseLeftButtonDown">
         <Button Command="{Binding ExpandCommand}"
                 Cursor="Hand"
                 Background="Transparent"
                 BorderThickness="0"
-                Padding="0">
-            <StackPanel HorizontalAlignment="Center"
-                        VerticalAlignment="Center">
-                <TextBlock Text="SP"
-                           FontSize="18"
-                           FontWeight="SemiBold"
+                Padding="0"
+                ToolTip="Expand SessionPad"
+                AutomationProperties.Name="Expand SessionPad">
+            <Grid VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0"
+                        Width="28"
+                        Height="28"
+                        CornerRadius="14"
+                        Background="{DynamicResource Accent}">
+                    <TextBlock Text="SP"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource Accent.OnAccent}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                </Border>
+
+                <TextBlock Grid.Column="1"
+                           Margin="9,0,0,0"
+                           Text="{Binding CurrentSessionDisplayName}"
+                           ToolTip="{Binding CurrentSessionDisplayName}"
+                           FontSize="12"
+                           FontWeight="Medium"
                            Foreground="{DynamicResource Text.Primary}"
-                           HorizontalAlignment="Center" />
-                <TextBlock Text="SessionPad"
-                           Margin="0,4,0,0"
-                           FontSize="10"
-                           Foreground="{DynamicResource Text.Muted}"
                            TextTrimming="CharacterEllipsis"
-                           HorizontalAlignment="Center" />
-                <TextBlock Text="{Binding OpenTodoCount, StringFormat={}TODO {0}}"
-                           Margin="0,7,0,0"
-                           FontSize="13"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource Accent}"
-                           HorizontalAlignment="Center" />
-                <TextBlock Text="{Binding CurrentSessionKind}"
-                           Margin="0,5,0,0"
-                           FontSize="10"
-                           Foreground="{DynamicResource Text.Muted}"
-                           MaxWidth="64"
-                           TextTrimming="CharacterEllipsis"
-                           HorizontalAlignment="Center" />
-                <TextBlock Text="Expand"
-                           Margin="0,5,0,0"
-                           FontSize="10"
-                           Foreground="{DynamicResource Text.Primary}"
-                           HorizontalAlignment="Center" />
-            </StackPanel>
+                           VerticalAlignment="Center" />
+
+                <Border Grid.Column="2"
+                        Margin="8,0,0,0"
+                        Padding="7,1"
+                        CornerRadius="9"
+                        Background="{DynamicResource Surface.Code}"
+                        BorderBrush="{DynamicResource Border.Hairline}"
+                        BorderThickness="1"
+                        VerticalAlignment="Center"
+                        ToolTip="Open to-dos">
+                    <Border.Style>
+                        <Style TargetType="{x:Type Border}">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding OpenTodoCount}" Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Text="{Binding OpenTodoCount}"
+                               FontSize="10.5"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource Accent}" />
+                </Border>
+            </Grid>
         </Button>
     </Border>
 </UserControl>

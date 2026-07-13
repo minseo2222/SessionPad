@@ -57,13 +57,15 @@ Commands
 
 Notes
 - Auth mock returns undefined in the failing case.
+```
 
 When the developer returns to that work window, the note returns.
 
-Terminal Commands
+### Terminal Commands
 
 A developer uses Windows Terminal and stores repeat commands:
 
+```text
 Commands
 - pnpm test -- --runInBand
 - git status
@@ -71,41 +73,44 @@ Commands
 
 Notes
 - Last failure was caused by stale fixture data.
+```
 
 Clicking a command should eventually copy it to clipboard.
 
-Positioning
+## Positioning
 
 SessionPad should feel like a tiny utility, not a workspace platform.
 
 The product should be:
 
-Fast
-Local
-Minimal
-Window-aware
-Non-invasive
-Non-goals
+- Fast
+- Local
+- Minimal
+- Window-aware
+- Non-invasive
+
+## Non-goals
 
 SessionPad should not become:
 
-A full note-taking app
-A project management app
-A markdown knowledge base
-An AI coding assistant
-A cloud document system
-A dashboard
-A chat app
-A collaboration app
-Privacy Principles
+- A full note-taking app
+- A project management app
+- A markdown knowledge base
+- An AI coding assistant
+- A cloud document system
+- A dashboard
+- A chat app
+- A collaboration app
+
+## Privacy Principles
 
 SessionPad must not automatically read or collect:
 
-Screen contents
-Terminal output
-Editor contents
-Browser contents
-Files from the current project
-Clipboard contents unless the user explicitly interacts with a command-copy feature
+- Screen contents
+- Terminal output
+- Editor contents
+- Browser contents
+- Files from the current project
+- Clipboard contents unless the user explicitly interacts with a command-copy feature
 
 The MVP stores only user-entered notes in local files.

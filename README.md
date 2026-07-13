@@ -62,7 +62,7 @@ dotnet build -c Release
 The publish script writes output under `artifacts/`, which is ignored by Git.
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/publish-release.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\publish-release.ps1
 ```
 
 Default output:
@@ -71,9 +71,26 @@ Default output:
 artifacts/SessionPad
 ```
 
-Pass `-Version 0.3.2` to produce a versioned folder such as `artifacts/SessionPad-v0.3.2`.
+Pass `-Version 0.5.0-beta.1` to produce a clean versioned staging folder such as
+`artifacts/SessionPad-v0.5.0-beta.1`. The version is also injected into the
+executable metadata; prerelease SemVer is supported.
 
 The script creates a framework-dependent publish by default. It does not create an installer, MSIX package, or signed build.
+
+To produce a distributable package (self-contained publish, bundled `LICENSE.md`,
+`PRIVACY.md`, and `release-manifest.json`, versioned zip plus verified SHA256
+checksum under `artifacts/`), start from a clean Git working tree and run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\package-release.ps1 -Version 0.5.0-beta.1
+```
+
+Packaging verifies executable versions, required files, archive contents, and
+the checksum. Release SemVer numeric components are limited to `65534`, and the
+currently supported runtime is `win-x64`. Use `-AllowDirty` only as an explicit
+override for a supervised local validation, never for an official release.
+
+See [`DEPLOY.md`](DEPLOY.md) for the full release procedure.
 
 ## Hotkey Attach
 
@@ -160,6 +177,13 @@ SessionPad is local-first:
 - Local errors (e.g. a failed save or an unavailable shortcut) are shown on screen
   only; nothing is reported or sent anywhere.
 
+The full data-behavior statement is in [`PRIVACY.md`](PRIVACY.md).
+
+## License
+
+SessionPad is proprietary software distributed under the terms in
+[`LICENSE.md`](LICENSE.md) (beta draft).
+
 ## Known Limitations
 
 - Window identity is currently `processName + normalizedWindowTitle`. Two windows
@@ -177,10 +201,12 @@ SessionPad is local-first:
 - Per-Monitor V2 DPI awareness is enabled, so the pad renders crisply across
   mixed-DPI monitors. Multi-monitor positioning still benefits from manual checking
   on your specific setup.
-- No installer or MSIX package yet.
+- No installer or MSIX package yet; distribution is a portable zip produced by
+  `scripts/package-release.ps1`. The executable is unsigned, so Windows
+  SmartScreen may warn on first run.
 
-See `docs/V0_3_0_RELEASE_NOTES.md` for the latest additions (item reordering,
-auto-track, WinEvent following, note backups, search, and a configurable shortcut).
+See `docs/V0_5_0_RELEASE_NOTES.md` for the latest additions (storage and hotkey
+hardening, accessibility polish, and distribution packaging).
 
 ## Project Layout
 
